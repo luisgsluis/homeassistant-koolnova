@@ -8,14 +8,13 @@ from requests.exceptions import HTTPError
 from homeassistant.components.climate import (
     ClimateEntity,
     HVACMode,
-    SUPPORT_TARGET_TEMPERATURE,
-    SUPPORT_FAN_MODE,
+    ClimateEntityFeature,
     FAN_LOW,
     FAN_MEDIUM,
     FAN_HIGH,
     FAN_AUTO,
 )
-from homeassistant.const import TEMP_CELSIUS
+from homeassistant.const import UnitOfTemperature
 from homeassistant.components.persistent_notification import async_create
 
 from .const import (
@@ -45,7 +44,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Koolnova climate entities."""
-    coordinator: KoolnovaDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = hass.data[DOMAIN][entry.entry_id]
     entities = []
 
     if coordinator.data.get("projects"):
@@ -58,7 +57,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities, update_before_add=False)
 
 class KoolnovaProjectEntity(ClimateEntity):
-    """Primary project as a climate device with global temperature control."""
+    """Project entity with temperature control and HVAC mode control."""
 
     def __init__(self, coordinator, config_entry, project):
         self.coordinator = coordinator
@@ -66,8 +65,8 @@ class KoolnovaProjectEntity(ClimateEntity):
         self._project = project
         self._attr_name = f"Koolnova {project['Project_Name']}"
         self._attr_unique_id = f"{config_entry.entry_id}_project"
-        self._attr_supported_features = SUPPORT_TARGET_TEMPERATURE
-        self._attr_temperature_unit = TEMP_CELSIUS
+        self._attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_should_poll = False
         self._global_target_temperature = self._get_min_temp()
 
@@ -78,6 +77,11 @@ class KoolnovaProjectEntity(ClimateEntity):
     def _get_project_hvac_modes(self):
         """Get configured project HVAC modes."""
         mode_values = self._get_config_value(CONF_PROJECT_HVAC_MODES, [mode.value for mode in DEFAULT_PROJECT_HVAC_MODES])
+        return [HVACMode(value) for value in mode_values]
+
+    def _get_zone_hvac_modes(self):
+        """Get configured zone HVAC modes."""
+        mode_values = self._get_config_value(CONF_ZONE_HVAC_MODES, [mode.value for mode in DEFAULT_ZONE_HVAC_MODES])
         return [HVACMode(value) for value in mode_values]
 
     def _get_min_temp(self):
@@ -94,7 +98,7 @@ class KoolnovaProjectEntity(ClimateEntity):
 
     @property
     def hvac_modes(self):
-        """Return configured HVAC modes for project."""
+        """Return configured project HVAC modes."""
         return self._get_project_hvac_modes()
 
     @property
@@ -128,7 +132,7 @@ class KoolnovaProjectEntity(ClimateEntity):
 
     @property
     def hvac_mode(self):
-        """Return current HVAC mode."""
+        """Return current project HVAC mode."""
         self._update_project_data()
         current_mode = KOOLNOVA_TO_HVAC_MODE.get(self._project["Mode"], HVACMode.OFF)
         if current_mode not in self.hvac_modes:
@@ -168,17 +172,26 @@ class KoolnovaProjectEntity(ClimateEntity):
         """Return extra state attributes."""
         self._update_project_data()
         sensors_count = len(self.coordinator.data.get("sensors", []))
+        
+        zone_status_breakdown = {}
+        for sensor in self.coordinator.data.get("sensors", []):
+            status = sensor.get("Room_status", "02")
+            hvac_mode = KOOLNOVA_ZONE_STATUS_TO_HVAC.get(status, "unknown")
+            mode_name = hvac_mode.value if hasattr(hvac_mode, 'value') else str(hvac_mode)
+            zone_status_breakdown[mode_name] = zone_status_breakdown.get(mode_name, 0) + 1
+
         attrs = {
             "eco_mode": self._project["eco"],
             "online_status": self._project["is_online"],
             "is_stop": self._project.get("is_stop"),
             "total_zones": sensors_count,
-            "global_target_temperature": self._global_target_temperature,
-            "control_type": "global_temperature_controller",
-            "configured_modes": [mode.value for mode in self.hvac_modes],
+            "control_type": "project_controller",
+            "configured_project_modes": [mode.value for mode in self._get_project_hvac_modes()],
+            "configured_zone_modes": [mode.value for mode in self._get_zone_hvac_modes()],
             "configured_min_temp": self.min_temp,
             "configured_max_temp": self.max_temp,
             "configured_precision": self.precision,
+            "zones_status_breakdown": zone_status_breakdown,
         }
         if self._project.get("last_sync"):
             try:
@@ -187,10 +200,10 @@ class KoolnovaProjectEntity(ClimateEntity):
                 attrs["last_sync"] = self._project["last_sync"]
         return attrs
 
-    async def async_set_hvac_mode(self, hvac_mode: HVACMode):
-        """Set HVAC mode - only configured modes allowed."""
+    async def async_set_hvac_mode(self, hvac_mode):
+        """Set project HVAC mode."""
         if hvac_mode not in self.hvac_modes:
-            _LOGGER.error("Unsupported HVAC mode for project: %s. Allowed: %s", 
+            _LOGGER.error("Unsupported project HVAC mode: %s. Available: %s", 
                          hvac_mode, self.hvac_modes)
             return
 
@@ -205,37 +218,35 @@ class KoolnovaProjectEntity(ClimateEntity):
                 result = await self.coordinator.async_update_project_data(
                     self._project["Topic_Id"], body
                 )
-                _LOGGER.info("Project HVAC mode updated to %s", hvac_mode)
+                _LOGGER.info("Project mode updated to %s", hvac_mode)
                 return
 
             except HTTPError as err:
                 _LOGGER.warning(
-                    "Attempt %d/%d failed updating project HVAC mode: %s",
+                    "Attempt %d/%d failed updating project mode: %s",
                     attempt, MAX_RETRY_ATTEMPTS, err
                 )
                 if attempt < MAX_RETRY_ATTEMPTS:
                     await asyncio.sleep(attempt * RETRY_DELAY_BASE)
                     continue
 
-                _LOGGER.error("Error updating project HVAC mode after %d attempts: %s", 
+                _LOGGER.error("Error updating project mode after %d attempts: %s", 
                             MAX_RETRY_ATTEMPTS, err)
                 async_create(
                     self.hass,
-                    f"Error updating project HVAC mode: {err}",
-                    title="Koolnova",
+                    f"Error updating project mode: {err}",
+                    title="Koolnova Project Mode",
                 )
 
     async def async_set_temperature(self, **kwargs):
-        """Set global target temperature for ALL sensors in the project."""
+        """Set global target temperature for ALL zones."""
         temp = kwargs.get("temperature")
         if temp is None:
             return
 
-        # Use configured precision
         precision = self.precision
         temp = round(temp / precision) * precision
         
-        # Validate range
         if temp < self.min_temp or temp > self.max_temp:
             _LOGGER.error("Temperature %s out of configured range (%s - %s)", 
                          temp, self.min_temp, self.max_temp)
@@ -278,8 +289,8 @@ class KoolnovaZoneEntity(ClimateEntity):
         self._sensor_id = sensor["Room_id"]
         self._attr_name = f"Koolnova {sensor['Room_Name']}"
         self._attr_unique_id = f"{config_entry.entry_id}_zone_{sensor['Room_id']}"
-        self._attr_supported_features = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE
-        self._attr_temperature_unit = TEMP_CELSIUS
+        self._attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.FAN_MODE
+        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_should_poll = False
 
     def _get_config_value(self, key, default):
@@ -398,11 +409,9 @@ class KoolnovaZoneEntity(ClimateEntity):
         if temp is None:
             return
 
-        # Use configured precision
         precision = self.precision
         temp = round(temp / precision) * precision
         
-        # Validate range
         if temp < self.min_temp or temp > self.max_temp:
             _LOGGER.error("Temperature %s out of configured range (%s - %s)", 
                          temp, self.min_temp, self.max_temp)
@@ -443,7 +452,7 @@ class KoolnovaZoneEntity(ClimateEntity):
                     title="Koolnova",
                 )
 
-    async def async_set_fan_mode(self, fan_mode: str):
+    async def async_set_fan_mode(self, fan_mode):
         """Set fan mode."""
         if fan_mode not in FAN_TO_KOOLNOVA:
             _LOGGER.error("Unsupported fan mode: %s. Available modes: %s",
@@ -485,7 +494,7 @@ class KoolnovaZoneEntity(ClimateEntity):
                     title="Koolnova",
                 )
 
-    async def async_set_hvac_mode(self, hvac_mode: HVACMode):
+    async def async_set_hvac_mode(self, hvac_mode):
         """Set HVAC mode for zones - only configured modes allowed."""
         if hvac_mode not in self.hvac_modes:
             _LOGGER.error("Unsupported HVAC mode for zone: %s. Allowed: %s", 

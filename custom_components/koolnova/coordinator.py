@@ -192,6 +192,34 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Error updating all sensors temperature: %s", err)
             raise
 
+    async def async_update_all_sensors_status(self, status_code: str):
+        """NUEVO: Update status for ALL sensors in the project."""
+        try:
+            _LOGGER.info("Updating status to %s for all sensors in project", status_code)
+            sensors_to_update = self.data.get("sensors", [])
+            updated_count = 0
+            failed_count = 0
+            
+            for sensor in sensors_to_update:
+                sensor_id = sensor.get("Room_id")
+                if sensor_id is not None:
+                    try:
+                        await self.async_update_sensor_data(sensor_id, {"status": status_code})
+                        updated_count += 1
+                        _LOGGER.debug("Updated status for sensor %s (%s) to %s", 
+                                    sensor_id, sensor.get("Room_Name", "Unknown"), status_code)
+                    except Exception as err:
+                        failed_count += 1
+                        _LOGGER.error("Failed to update status for sensor %s (%s): %s", 
+                                    sensor_id, sensor.get("Room_Name", "Unknown"), err)
+            
+            _LOGGER.info("Status update completed: %d successful, %d failed", 
+                        updated_count, failed_count)
+            return {"updated": updated_count, "failed": failed_count}
+        except Exception as err:
+            _LOGGER.error("Error updating all sensors status: %s", err)
+            raise
+
     async def async_options_updated(self):
         """Handle updated options - restart coordinator with new interval."""
         config_data = self.config_entry.data

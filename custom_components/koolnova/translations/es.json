@@ -37,6 +37,23 @@
     "error": {
       "temp_range_invalid": "La temperatura mínima debe ser menor que la máxima"
     }
+  },
+  "entity": {
+    "climate": {
+      "koolnova": {
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "none": "Ninguno",
+              "zonas_apagadas": "Todas las Zonas APAGADAS",
+              "zonas_automatico": "Todas las Zonas AUTOMÁTICO",
+              "zonas_frio": "Todas las Zonas FRÍO",
+              "zonas_calor": "Todas las Zonas CALOR"
+            }
+          }
+        }
+      }
+    }
   }
 }
 
