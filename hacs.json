@@ -1,0 +1,11 @@
+{
+    "name": "Koolnova",
+    "content_in_root": false,
+    "filename": "koolnova",
+    "country": ["ES"],
+    "homeassistant": "2023.7.3",
+    "iot_class": "Cloud Polling",
+    "render_readme": true,
+    "zip_release": false,
+    "hide_default_branch": false
+}
