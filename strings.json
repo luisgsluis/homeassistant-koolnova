@@ -1,0 +1,57 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Set up Koolnova",
+                "description": "Enter your Koolnova account credentials",
+                "data": {
+                    "email": "Email Address",
+                    "password": "Password"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Failed to connect to Koolnova API",
+            "invalid_auth": "Invalid email or password",
+            "unknown": "Unexpected error occurred"
+        },
+        "abort": {
+            "already_configured": "Account is already configured"
+        }
+    },
+    "options": {
+        "step": {
+            "user": {
+                "title": "Configure Koolnova Options",
+                "description": "Customize integration behavior and limits",
+                "data": {
+                    "update_interval": "Update Interval (seconds)",
+                    "project_hvac_modes": "Project HVAC Modes",
+                    "zone_hvac_modes": "Zone HVAC Modes",
+                    "min_temp": "Minimum Temperature",
+                    "max_temp": "Maximum Temperature",
+                    "temp_precision": "Temperature Precision"
+                }
+            }
+        },
+        "error": {
+            "temp_range_invalid": "Minimum temperature must be less than maximum temperature"
+        }
+    },
+    "entity": {
+        "climate": {
+            "koolnova_project": {
+                "name": "Koolnova Global Control",
+                "state_attributes": {
+                    "preset_mode": {
+                        "name": "Zone Mode",
+                        "state": {
+                            "off": "Off",
+                            "auto": "Auto"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
