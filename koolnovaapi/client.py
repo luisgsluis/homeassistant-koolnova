@@ -12,6 +12,7 @@ from dateutil.parser import parse
 
 from .exceptions import KoolnovaError
 from .session import KoolnovaClientSession
+from .const import COMMON_HEADERS, PATCH_HEADERS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class KoolnovaAPIRestClient:
    
 
     def get_project(self) -> Dict[str, Any]:
-        
+
         # Use the same endpoint shape as the webapp: trailing slash + common
         # query params. Add browser-like headers to match the web request.
         params = {
@@ -52,14 +53,7 @@ class KoolnovaAPIRestClient:
             "search": "",
             "is_oem": "false",
         }
-        headers = {
-            "accept": "application/json, text/plain, */*",
-            "accept-language": "fr",
-            "origin": "https://app.koolnova.com",
-            "referer": "https://app.koolnova.com/",
-            "cache-control": "no-cache",
-            "user-agent": "Mozilla/5.0",
-        }
+        headers = COMMON_HEADERS.copy()
 
         response = self._get_session().rest_request("GET", "projects/", params=params, headers=headers)
         response.raise_for_status()
@@ -97,16 +91,9 @@ class KoolnovaAPIRestClient:
         return projects
 
     def get_sensors(self) -> Dict[str, Any]:
-        
+
         # Request the sensors endpoint using trailing slash and browser-like headers
-        headers = {
-            "accept": "application/json, text/plain, */*",
-            "accept-language": "fr",
-            "origin": "https://app.koolnova.com",
-            "referer": "https://app.koolnova.com/",
-            "cache-control": "no-cache",
-            "user-agent": "Mozilla/5.0",
-        }
+        headers = COMMON_HEADERS.copy()
 
         resp = self._get_session().rest_request("GET", "topics/sensors/", headers=headers)
         json_resp = resp.json()
@@ -158,10 +145,7 @@ class KoolnovaAPIRestClient:
             The JSON response from the API.
         """
         url = f"topics/sensors/{sensor_id}/"
-        headers = {
-            "accept": "application/json, text/plain, */*",
-            "content-type": "application/json"
-        }
+        headers = PATCH_HEADERS.copy()
 
         # Send the PATCH request
         response = self._get_session().rest_request("PATCH", url, json=payload, headers=headers)
@@ -289,11 +273,7 @@ class KoolnovaAPIRestClient:
             The JSON response from the API.
         """
         url = f"topics/{topic_id}/"
-        headers = {
-            "accept": "application/json, text/plain, */*",
-            "content-type": "application/json",
-            "accept-language": "fr"
-        }
+        headers = PATCH_HEADERS.copy()
 
         response = self._get_session().rest_request("PATCH", url, json=payload, headers=headers)
         response.raise_for_status()
