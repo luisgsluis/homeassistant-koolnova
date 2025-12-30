@@ -64,6 +64,11 @@ Usa Chrome en local para acceder a HA durante las pruebas.
 ## Estructura del Proyecto
 
 - `koolnova_api/`: Cliente API para Koolnova (con __init__.py para paquete válido)
+- `backups/`: ❌ **CÓDIGO OBSOLETO - NO USAR**
+  - Contiene versiones anteriores del código que pueden tener bugs
+  - **NO modificar ni usar este código**
+  - Mantener solo para referencia histórica
+  - Si necesitas recuperar algo, copiar a archivos principales y corregir
 - `__init__.py`: Inicialización de la integración
 - `coordinator.py`: Coordinador de datos
 - `climate.py`: Entidades climáticas
