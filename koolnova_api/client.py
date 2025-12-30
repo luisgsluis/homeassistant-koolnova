@@ -147,8 +147,8 @@ class KoolnovaAPIRestClient:
         url = f"topics/sensors/{sensor_id}/"
         headers = PATCH_HEADERS.copy()
 
-        # Send the PATCH request
-        response = self._get_session().rest_request("PATCH", url, json=payload, headers=headers)
+        # Send the PUT request
+        response = self._get_session().rest_request("PUT", url, json=payload, headers=headers)
         response.raise_for_status()
 
         _LOGGER.debug("Sensor %s updated successfully with payload %s: %s", sensor_id, payload, response.json())
