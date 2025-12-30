@@ -14,6 +14,12 @@ O en tiempo real:
 docker logs -f homeassistant
 ```
 
+También puedes revisar el archivo de logs principal:
+
+```bash
+tail -f /docker/homeassistant/config/home-assistant.log
+```
+
 ## Errores Comunes
 
 ### Error 404/400 en API (Falta User-Agent)

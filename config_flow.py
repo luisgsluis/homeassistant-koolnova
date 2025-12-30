@@ -124,7 +124,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry):
         """Initialize options flow."""
-        self._config_entry = config_entry
+        self.entry = config_entry
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
@@ -150,8 +150,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     def _get_options_schema(self):
         """Return options schema."""
-        current_data = self._config_entry.data
-        current_options = self._config_entry.options
+        current_data = self.entry.data
+        current_options = self.entry.options
 
         # Obtener valores actuales o por defecto
         current_interval = current_options.get(CONF_UPDATE_INTERVAL, current_data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL))
