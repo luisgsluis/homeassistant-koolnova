@@ -7,8 +7,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
-from koolnova_api.client import KoolnovaAPIRestClient
-from koolnova_api.exceptions import KoolnovaError
+from .koolnova_api.client import KoolnovaAPIRestClient
+from .koolnova_api.exceptions import KoolnovaError
 
 from .const import (
     CONF_UPDATE_INTERVAL,
@@ -78,12 +78,27 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Unexpected error: {err}")
 
     async def _async_update_data(self) -> dict:
-        """Update data asynchronously. Full fetch on first run, sensors only on periodic updates."""
+        """
+        Update data asynchronously with intelligent polling strategy.
+
+        This method implements a smart polling approach to optimize API usage:
+        - FIRST RUN: Fetches complete data (projects + sensors) for initial setup
+        - PERIODIC UPDATES: Only fetches sensors to keep entity states current
+
+        This optimization reduces API load since project data rarely changes,
+        while sensor data (temperatures, status) updates frequently.
+
+        Returns:
+            dict: Data structure with 'projects' and 'sensors' keys
+        """
         if self.data and self.data.get("projects"):
-            # Periodic update: only fetch sensors to update entity states
+            # PERIODIC UPDATE STRATEGY: Only fetch sensors for efficiency
+            # Projects rarely change, sensors update frequently (temp, status, etc.)
+            _LOGGER.debug("Using optimized polling: sensors only (projects cached)")
             return await self.hass.async_add_executor_job(self._fetch_sensors_only)
         else:
-            # Initial setup: fetch all data
+            # INITIAL SETUP: Fetch complete dataset
+            _LOGGER.debug("Initial setup: fetching complete dataset (projects + sensors)")
             return await self.hass.async_add_executor_job(self._fetch_data)
 
     def _fetch_projects(self):

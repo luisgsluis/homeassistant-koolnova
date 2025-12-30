@@ -40,7 +40,15 @@ La integración es compatible con HACS (Home Assistant Community Store):
 
 ## Changelog
 
-### v1.1.0 (Actual)
+### v1.2.0 (Próxima - Fix Crítico)
+- 🚨 **FIX CRÍTICO**: Resuelto conflicto de imports que causaba errores 404
+- ✅ Eliminado paquete PyPI conflictivo `koolnova-api`
+- ✅ Renombrado módulo local a `koolnova_api` (con guión bajo)
+- ✅ Implementados imports relativos para estabilidad
+- ✅ Agregado `__init__.py` al directorio del módulo
+- 📈 Rendimiento optimizado: Solo código local, sin dependencias externas
+
+### v1.1.0
 - Mejora en el polling del coordinator
 - Soporte para control global de zonas
 - Optimización de mapeos HVAC

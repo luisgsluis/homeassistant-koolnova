@@ -11,8 +11,8 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
 from homeassistant.components.climate import HVACMode
 
-from koolnova_api.client import KoolnovaAPIRestClient
-from koolnova_api.exceptions import KoolnovaError
+from .koolnova_api.client import KoolnovaAPIRestClient
+from .koolnova_api.exceptions import KoolnovaError
 
 from .const import (
     DOMAIN,

@@ -2,6 +2,25 @@
 
 La integración Koolnova para Home Assistant está estructurada como una integración custom que consume la API REST de Koolnova para controlar sistemas HVAC.
 
+## ⚠️ Importante: Arquitectura de Imports Resuelta
+
+### Problema Original
+La integración sufrió un conflicto crítico de imports entre:
+- **Paquete PyPI**: `koolnova-api` (con guión) - distribución externa instalada
+- **Módulo local**: `koolnovaapi` (sin guión) - código fuente local
+
+### Solución Implementada
+- **Eliminado paquete PyPI conflictivo** que causaba errores 404
+- **Renombrado módulo local** a `koolnova_api` (con guión bajo)
+- **Implementados imports relativos** para evitar conflictos con paquetes globales
+- **Agregado `__init__.py`** para convertir directorio en paquete Python válido
+
+### Beneficios
+- ✅ **Sin dependencias externas**: Solo usa código local
+- ✅ **Imports estables**: No hay conflictos con paquetes PyPI
+- ✅ **Mantenimiento simplificado**: Todo el código está bajo control local
+- ✅ **Rendimiento optimizado**: Sin sobrecarga de paquetes externos
+
 ## Estructura de Archivos
 
 ### `__init__.py`
@@ -45,11 +64,12 @@ La integración Koolnova para Home Assistant está estructurada como una integra
 
 ## Arquitectura del Cliente API
 
-### `koolnovaapi/`
+### `koolnova_api/`
 - **`client.py`**: Cliente principal para llamadas a la API
 - **`session.py`**: Manejo de autenticación y sesiones
 - **`exceptions.py`**: Excepciones personalizadas
 - **`const.py`**: Constantes de la API
+- **`__init__.py`**: Convierte directorio en paquete Python válido
 
 ## Flujo de Datos
 

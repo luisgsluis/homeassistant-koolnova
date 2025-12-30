@@ -1,5 +1,25 @@
 # Entorno de Desarrollo Koolnova Integration
 
+## ⚠️ Importante: Arquitectura de Imports
+
+### Cambio Crítico en Desarrollo
+- **Antes**: Módulo local se llamaba `koolnovaapi` (sin guión)
+- **Ahora**: Módulo local se llama `koolnova_api` (con guión bajo)
+- **Imports**: Usar siempre imports relativos `from .koolnova_api.client import ...`
+- **Nunca usar**: Imports absolutos como `from koolnovaapi.client import ...`
+
+### ¿Por qué este cambio?
+Resolvió conflicto crítico entre:
+- Paquete PyPI `koolnova-api` (causaba errores 404)
+- Módulo local `koolnovaapi` (código fuente)
+
+### Regla de Oro en Desarrollo
+🔴 **NUNCA instalar paquetes externos** - Solo usar código local
+🔴 **NUNCA usar imports absolutos** - Solo imports relativos
+🔴 **SIEMPRE limpiar caché Python** después de cambios en imports
+
+---
+
 ## Configuración VS Code Remote SSH
 
 1. Instala la extensión "Remote SSH" en VS Code
@@ -43,7 +63,7 @@ Usa Chrome en local para acceder a HA durante las pruebas.
 
 ## Estructura del Proyecto
 
-- `koolnovaapi/`: Cliente API para Koolnova
+- `koolnova_api/`: Cliente API para Koolnova (con __init__.py para paquete válido)
 - `__init__.py`: Inicialización de la integración
 - `coordinator.py`: Coordinador de datos
 - `climate.py`: Entidades climáticas

@@ -1,6 +1,6 @@
 # Documentación API Koolnova
 
-Esta integración consume la API REST de Koolnova para controlar sistemas HVAC.
+Esta integración consume la API REST de Koolnova para controlar sistemas HVAC. La API está implementada con Django REST framework y está disponible en https://api.koolnova.com/.
 
 ## Endpoints Utilizados
 

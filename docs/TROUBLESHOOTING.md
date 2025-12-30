@@ -1,5 +1,30 @@
 # Troubleshooting Koolnova Integration
 
+## 🚨 Problema Crítico Resuelto: Conflicto de Imports
+
+### Síntomas Anteriores
+- Error: `ModuleNotFoundError: No module named 'koolnovaapi'`
+- Error 404 en todas las operaciones API
+- Integración no carga en Home Assistant
+
+### Causa Raíz
+Conflicto entre:
+- **Paquete PyPI**: `koolnova-api` (con guión) - causaba errores 404
+- **Módulo local**: `koolnovaapi` (sin guión) - código fuente
+
+### Solución Aplicada
+✅ **Eliminado paquete PyPI conflictivo**
+✅ **Renombrado módulo local** a `koolnova_api`
+✅ **Implementados imports relativos** (`from .koolnova_api.client import ...`)
+✅ **Agregado `__init__.py`** al directorio del módulo
+
+### Verificación
+- Integración carga sin errores
+- Todas las operaciones API funcionan correctamente
+- Logs muestran actividad normal del coordinator
+
+---
+
 ## Logs de Home Assistant
 
 Para ver los logs de HA y la integración:
@@ -34,7 +59,7 @@ tail -f /home/admin/docker/homeassistant/config/home-assistant.log
 
 **Solución**:
 - Verificar que el cliente API incluye todos los headers requeridos
-- Revisar `koolnovaapi/client.py` para configuración de headers
+- Revisar `koolnova_api/client.py` para configuración de headers
 
 ### Config Flow Errors
 
