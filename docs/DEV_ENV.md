@@ -35,7 +35,7 @@ Antes de hacer push a GitHub, siempre prueba la integración:
 
 1. Reinicia HA con `docker restart homeassistant`
 2. Verifica que no hay errores en logs: `docker logs homeassistant`
-3. Revisa logs detallados: `tail -f /docker/homeassistant/config/home-assistant.log`
+3. Revisa logs detallados: `tail -f /home/admin/docker/homeassistant/config/home-assistant.log`
 4. Prueba la configuración desde la UI de HA
 5. Verifica que las entidades funcionan correctamente
 

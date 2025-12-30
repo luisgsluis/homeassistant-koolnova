@@ -17,7 +17,7 @@ docker logs -f homeassistant
 También puedes revisar el archivo de logs principal:
 
 ```bash
-tail -f /docker/homeassistant/config/home-assistant.log
+tail -f /home/admin/docker/homeassistant/config/home-assistant.log
 ```
 
 ## Errores Comunes
