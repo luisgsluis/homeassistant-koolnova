@@ -144,7 +144,7 @@ class KoolnovaAPIRestClient:
         Returns:
             The JSON response from the API.
         """
-        url = f"topics/sensors/{sensor_id}/"
+        url = f"topics/sensors/{sensor_id}"
         headers = PATCH_HEADERS.copy()
 
         # Send the PATCH request
