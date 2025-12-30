@@ -47,12 +47,12 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
         self.data = {"projects": [], "sensors": []}
 
     def _fetch_data(self) -> dict:
-        """Fetch all data from Koolnova API. Called every UPDATE_INTERVAL."""
+        """Fetch all data from Koolnova API. Called during initial setup."""
         try:
-            _LOGGER.debug("Fetching all data from Koolnova API (scheduled update)")
+            _LOGGER.debug("Fetching all data from Koolnova API (initial setup)")
             projects = self.client.get_project()
             sensors = self.client.get_sensors()
-            _LOGGER.debug("Successfully fetched %d projects and %d sensors", 
+            _LOGGER.debug("Successfully fetched %d projects and %d sensors",
                          len(projects), len(sensors))
             return {"projects": projects, "sensors": sensors}
         except KoolnovaError as err:
@@ -62,9 +62,29 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Unexpected error fetching data: %s", err)
             raise UpdateFailed(f"Unexpected error: {err}")
 
+    def _fetch_sensors_only(self) -> dict:
+        """Fetch only sensors data from Koolnova API. Called during periodic updates."""
+        try:
+            _LOGGER.debug("Fetching sensors data from Koolnova API (periodic update)")
+            sensors = self.client.get_sensors()
+            _LOGGER.debug("Successfully fetched %d sensors", len(sensors))
+            # Keep existing projects data, only update sensors
+            return {"projects": self.data.get("projects", []), "sensors": sensors}
+        except KoolnovaError as err:
+            _LOGGER.error("Koolnova API error fetching sensors: %s", err)
+            raise UpdateFailed(f"Error communicating with Koolnova API: {err}")
+        except Exception as err:
+            _LOGGER.error("Unexpected error fetching sensors: %s", err)
+            raise UpdateFailed(f"Unexpected error: {err}")
+
     async def _async_update_data(self) -> dict:
-        """Update all data asynchronously (projects and sensors)."""
-        return await self.hass.async_add_executor_job(self._fetch_data)
+        """Update data asynchronously. Full fetch on first run, sensors only on periodic updates."""
+        if self.data and self.data.get("projects"):
+            # Periodic update: only fetch sensors to update entity states
+            return await self.hass.async_add_executor_job(self._fetch_sensors_only)
+        else:
+            # Initial setup: fetch all data
+            return await self.hass.async_add_executor_job(self._fetch_data)
 
     def _fetch_projects(self):
         """Fetch only projects from API."""
