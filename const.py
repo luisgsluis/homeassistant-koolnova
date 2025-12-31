@@ -18,7 +18,7 @@ MIN_UPDATE_INTERVAL = 5       # minimo configurable
 MAX_UPDATE_INTERVAL = 300     # maximo configurable
 DEFAULT_PROJECT_UPDATE_FREQUENCY = 10  # cada cuantas actualizaciones se actualizan proyectos
 MIN_PROJECT_UPDATE_FREQUENCY = 1      # minimo configurable (siempre actualizar)
-MAX_PROJECT_UPDATE_FREQUENCY = 100    # maximo configurable
+MAX_PROJECT_UPDATE_FREQUENCY = 300    # maximo configurable
 
 DEFAULT_PROJECT_HVAC_MODES = [HVACMode.COOL, HVACMode.HEAT]
 DEFAULT_ZONE_HVAC_MODES = [HVACMode.OFF, HVACMode.AUTO]

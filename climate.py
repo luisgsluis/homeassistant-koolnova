@@ -4,6 +4,8 @@
 
 import asyncio
 import logging
+import statistics
+from collections import Counter
 from datetime import datetime
 from requests.exceptions import HTTPError
 
@@ -76,8 +78,7 @@ class KoolnovaProjectEntity(ClimateEntity):
         )
         self._attr_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_should_poll = False
-        
-        self._global_target_temperature = self._get_min_temp()
+
         self._global_fan_mode = FAN_AUTO
         self._global_zone_hvac_mode = HVACMode.AUTO
 
@@ -130,9 +131,22 @@ class KoolnovaProjectEntity(ClimateEntity):
 
     @property
     def preset_mode(self):
-        """Return current global zone HVAC mode as a custom preset."""
-        # Devolvemos el valor del modo actual, ej: 'auto'
-        return self._global_zone_hvac_mode.value
+        """Return most common zone HVAC mode among all zones."""
+        sensors = self.coordinator.data.get("sensors", [])
+        if not sensors:
+            return None
+
+        modes = []
+        for sensor in sensors:
+            status = sensor.get("Room_status", "02")
+            hvac_mode = KOOLNOVA_ZONE_STATUS_TO_HVAC.get(status, HVACMode.OFF)
+            if hvac_mode in self._get_zone_hvac_modes():
+                modes.append(hvac_mode.value)
+
+        if modes:
+            # Return the most common mode, if tie, Counter.most_common returns first one
+            return Counter(modes).most_common(1)[0][0]
+        return None
 
     @property
     def min_temp(self):
@@ -174,24 +188,37 @@ class KoolnovaProjectEntity(ClimateEntity):
 
     @property
     def target_temperature(self):
-        """Return global target temperature."""
-        return self._global_target_temperature
-
-    @property
-    def current_temperature(self):
-        """Return average temperature of all zones."""
+        """Return median of zones' target temperatures."""
         sensors = self.coordinator.data.get("sensors", [])
         if not sensors:
             return None
-        
+
+        temps = [
+            sensor["Room_setpoint_temp"]
+            for sensor in sensors
+            if sensor.get("Room_setpoint_temp") is not None
+        ]
+
+        if temps:
+            return statistics.median(temps)
+        return None
+
+    @property
+    def current_temperature(self):
+        """Return average temperature of all zones, rounded to nearest 0.5."""
+        sensors = self.coordinator.data.get("sensors", [])
+        if not sensors:
+            return None
+
         temps = [
             sensor["Room_actual_temp"]
             for sensor in sensors
             if sensor.get("Room_actual_temp") is not None
         ]
-        
+
         if temps:
-            return round(sum(temps) / len(temps), 1)
+            avg_temp = sum(temps) / len(temps)
+            return round(avg_temp * 2) / 2
         return None
 
     @property
@@ -343,9 +370,6 @@ class KoolnovaProjectEntity(ClimateEntity):
             _LOGGER.error("Temperature %s out of configured range (%s - %s)", temp, self.min_temp, self.max_temp)
             return
 
-        self._global_target_temperature = temp
-        self.async_write_ha_state()
-        
         _LOGGER.info("Setting global temperature to %s degrees for all zones", temp)
 
         try:
