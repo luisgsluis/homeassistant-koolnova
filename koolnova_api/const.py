@@ -10,7 +10,7 @@ FULL_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 # Common headers for API requests
 COMMON_HEADERS = {
     "accept": "application/json, text/plain, */*",
-    "accept-language": "fr",
+    "accept-language": "en",
     "origin": "https://app.koolnova.com",
     "referer": "https://app.koolnova.com/",
     "cache-control": "no-cache",

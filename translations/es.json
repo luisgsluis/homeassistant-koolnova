@@ -26,6 +26,7 @@
                 "description": "Personaliza el comportamiento y límites de la integración",
                 "data": {
                     "update_interval": "Intervalo de Actualización (segundos)",
+                    "project_update_frequency": "Frecuencia de Actualización de Proyectos (ciclos)",
                     "project_hvac_modes": "Modos HVAC del Proyecto",
                     "zone_hvac_modes": "Modos HVAC de las Zonas",
                     "min_temp": "Temperatura Mínima",

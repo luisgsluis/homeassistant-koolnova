@@ -60,7 +60,7 @@ class KoolnovaProjectEntity(ClimateEntity):
     """Project entity with global control: temperature, project HVAC mode, zone fan speed, and zone HVAC mode."""
 
     _attr_has_entity_name = True
-    _attr_translation_key = "koolnova_project" # Clave para que HA busque traducciones especÌficas.
+    _attr_translation_key = "koolnova_project" # Clave para que HA busque traducciones espec√≠ficas.
 
     def __init__(self, coordinator, config_entry, project):
         """Initialize the project entity."""
@@ -125,7 +125,7 @@ class KoolnovaProjectEntity(ClimateEntity):
     @property
     def preset_modes(self):
         """Return available zone HVAC modes as custom preset modes."""
-        # Devolvemos los valores ('off', 'auto') que se usar·n como claves en los ficheros de traducciÛn.
+        # Devolvemos los valores ('off', 'auto') que se usar√°n como claves en los ficheros de traducci√≥n.
         return [mode.value for mode in self._get_zone_hvac_modes()]
 
     @property
@@ -159,7 +159,7 @@ class KoolnovaProjectEntity(ClimateEntity):
     def _update_project_data(self):
         """Update local project data from coordinator."""
         for project in self.coordinator.data.get("projects", []):
-            if project.get("Topic_Id") == self._project.get("Topic_Id"):
+            if project.get("Topic_id") == self._project.get("Topic_id"):
                 self._project = project
                 break
 
@@ -253,7 +253,7 @@ class KoolnovaProjectEntity(ClimateEntity):
         body = {"mode": koolnova_mode}
 
         try:
-            await self.coordinator.async_update_project_data(self._project["Topic_Id"], body)
+            await self.coordinator.async_update_project_data(self._project["Topic_id"], body)
             _LOGGER.info("Project mode updated to %s", hvac_mode)
         except Exception as err:
             _LOGGER.error("Error updating project mode: %s", err)

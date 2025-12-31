@@ -16,6 +16,9 @@ PLATFORMS = ["climate"]
 DEFAULT_UPDATE_INTERVAL = 10  # segundos
 MIN_UPDATE_INTERVAL = 5       # minimo configurable
 MAX_UPDATE_INTERVAL = 300     # maximo configurable
+DEFAULT_PROJECT_UPDATE_FREQUENCY = 10  # cada cuantas actualizaciones se actualizan proyectos
+MIN_PROJECT_UPDATE_FREQUENCY = 1      # minimo configurable (siempre actualizar)
+MAX_PROJECT_UPDATE_FREQUENCY = 100    # maximo configurable
 
 DEFAULT_PROJECT_HVAC_MODES = [HVACMode.COOL, HVACMode.HEAT]
 DEFAULT_ZONE_HVAC_MODES = [HVACMode.OFF, HVACMode.AUTO]
@@ -32,6 +35,7 @@ AVAILABLE_TEMP_PRECISIONS = [0.5, 1.0]
 
 # Claves de configuracion
 CONF_UPDATE_INTERVAL = "update_interval"
+CONF_PROJECT_UPDATE_FREQUENCY = "project_update_frequency"
 CONF_PROJECT_HVAC_MODES = "project_hvac_modes"
 CONF_ZONE_HVAC_MODES = "zone_hvac_modes"
 CONF_MIN_TEMP = "min_temp"
@@ -41,9 +45,9 @@ CONF_TEMP_PRECISION = "temp_precision"
 # HVAC Mode mappings para proyectos - OPTIMIZADO: Solo definicion principal
 KOOLNOVA_TO_HVAC_MODE = {
     "1": HVACMode.COOL,
-    "2": HVACMode.OFF, 
-    "4": HVACMode.AUTO,
-    "6": HVACMode.HEAT
+    "2": HVACMode.OFF,
+    "4": HVACMode.HEAT,
+    "6": HVACMode.AUTO
 }
 
 # Generar mapeo inverso automaticamente para project HVAC
