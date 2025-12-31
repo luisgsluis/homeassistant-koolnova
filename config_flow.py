@@ -173,7 +173,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Range(min=MIN_UPDATE_INTERVAL, max=MAX_UPDATE_INTERVAL)
             ),
             vol.Required(CONF_PROJECT_UPDATE_FREQUENCY, default=current_project_update_freq): vol.All(
-                vol.Coerce(int),
+                cv.positive_int,
                 vol.Range(min=MIN_PROJECT_UPDATE_FREQUENCY, max=MAX_PROJECT_UPDATE_FREQUENCY)
             ),
             vol.Required(CONF_PROJECT_HVAC_MODES, default=current_project_modes): cv.multi_select({
