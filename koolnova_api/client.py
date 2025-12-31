@@ -20,6 +20,9 @@ _LOGGER = logging.getLogger(__name__)
 class KoolnovaAPIRestClient:
     """Proxy to the Koolnova REST API."""
 
+    # Token expires after 1 hour (3600 seconds) - use 50 minutes to be safe
+    TOKEN_LIFETIME = 3000  # 50 minutes in seconds
+
     def __init__(self, username: str, password: str, email: Optional[str] = None) -> None:
         """Initialize the API and authenticate so we can make requests.
 
@@ -33,9 +36,31 @@ class KoolnovaAPIRestClient:
         self.email = email
         self.session: Optional[KoolnovaClientSession] = None
 
-    def _get_session(self) -> KoolnovaClientSession:
+    def _is_session_valid(self) -> bool:
+        """Check if current session is valid and not expired."""
         if self.session is None:
-            self.session = KoolnovaClientSession(self.username, self.password, self.email)
+            return False
+
+        # Check if token has expired
+        if hasattr(self.session, 'token_created'):
+            elapsed = time.time() - self.session.token_created
+            if elapsed > self.TOKEN_LIFETIME:
+                _LOGGER.debug("Session token expired (%.0f seconds old)", elapsed)
+                return False
+
+        return True
+
+    def _get_session(self) -> KoolnovaClientSession:
+        """Get a valid session, creating or refreshing if necessary."""
+        if not self._is_session_valid():
+            _LOGGER.debug("Creating new session (previous was invalid/expired)")
+            try:
+                self.session = KoolnovaClientSession(self.username, self.password, self.email)
+            except Exception as e:
+                _LOGGER.error("Failed to create new session: %s", e)
+                self.session = None
+                raise
+
         return self.session
 
     

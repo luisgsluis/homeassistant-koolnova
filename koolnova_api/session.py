@@ -62,29 +62,62 @@ class KoolnovaClientSession(Session):
             "user-agent": DEFAULT_USER_AGENT,  # ← USAR CONSTANTE
         }
 
-        # Simple retry on 429 Too Many Requests
+        # Improved retry logic with exponential backoff for rate limiting
         response = None
-        for attempt in range(3):
+        max_attempts = 5
+        base_delay = 2.0  # Start with 2 seconds
+        max_delay = 60.0  # Cap at 60 seconds
+
+        for attempt in range(max_attempts):
             try:
-                response = super().request("POST", KOOLNOVA_AUTH_URL, json=payload, headers=headers_token, timeout=10)
-            except Exception:
-                _LOGGER.exception("Exception when calling auth endpoint (attempt %s)", attempt + 1)
+                response = super().request("POST", KOOLNOVA_AUTH_URL, json=payload, headers=headers_token, timeout=30)
+            except Exception as e:
+                _LOGGER.exception("Exception when calling auth endpoint (attempt %d/%d): %s", attempt + 1, max_attempts, e)
                 response = None
 
             if response is None:
-                # small sleep and retry
-                time.sleep(0.5 * (attempt + 1))
+                # Network error - use exponential backoff
+                if attempt < max_attempts - 1:
+                    delay = min(base_delay * (2 ** attempt), max_delay)
+                    _LOGGER.debug("Network error, retrying in %.1f seconds (attempt %d/%d)", delay, attempt + 1, max_attempts)
+                    time.sleep(delay)
                 continue
 
             _LOGGER.debug("Auth response status: %s", response.status_code)
+
             if response.status_code == 429:
-                # backoff and retry
-                time.sleep(0.5 * (attempt + 1))
-                continue
-            break
+                # Rate limiting - extract retry-after if available
+                retry_after = response.headers.get('Retry-After')
+                if retry_after:
+                    try:
+                        delay = min(float(retry_after), max_delay)
+                    except ValueError:
+                        delay = min(base_delay * (2 ** attempt), max_delay)
+                else:
+                    # API says "Expected available in 32 seconds" - use that as base
+                    delay = min(32.0 + (attempt * 5), max_delay)
+
+                if attempt < max_attempts - 1:
+                    _LOGGER.warning("Rate limited (429), retrying in %.1f seconds (attempt %d/%d)", delay, attempt + 1, max_attempts)
+                    time.sleep(delay)
+                    continue
+                else:
+                    _LOGGER.error("Rate limit persisted after %d attempts", max_attempts)
+                    break
+            elif response.status_code >= 500:
+                # Server errors - use shorter backoff
+                if attempt < max_attempts - 1:
+                    delay = min(base_delay * (2 ** attempt), 30.0)
+                    _LOGGER.debug("Server error (%d), retrying in %.1f seconds (attempt %d/%d)",
+                                response.status_code, delay, attempt + 1, max_attempts)
+                    time.sleep(delay)
+                    continue
+            else:
+                # Success or client error - break
+                break
 
         if response is None:
-            raise RuntimeError("Authentication request failed (no response)")
+            raise RuntimeError(f"Authentication request failed after {max_attempts} attempts (no response)")
 
         # Log body for easier debugging when failing
         try:
@@ -106,6 +139,7 @@ class KoolnovaClientSession(Session):
             raise RuntimeError(f"Authentication response did not contain a token: {data}")
 
         self.bearerToken = str(token)
+        self.token_created = time.time()  # Track when token was created
         _LOGGER.debug("BearerToken of authentication : %s", self.bearerToken)
 
     def rest_request(self, method: str, path: str, **kwargs) -> Response:

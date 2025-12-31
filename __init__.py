@@ -40,5 +40,13 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry when options change."""
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
+    coordinator = hass.data[DOMAIN].get(entry.entry_id)
+    if coordinator:
+        # Update coordinator options without full reload
+        await coordinator.async_options_updated()
+        _LOGGER.info("Updated coordinator options for entry %s", entry.entry_id)
+    else:
+        # Fallback to full reload if coordinator not found
+        _LOGGER.warning("Coordinator not found for entry %s, performing full reload", entry.entry_id)
+        await async_unload_entry(hass, entry)
+        await async_setup_entry(hass, entry)

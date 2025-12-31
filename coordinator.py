@@ -13,6 +13,8 @@ from .koolnova_api.exceptions import KoolnovaError
 from .const import (
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
+    CONF_PROJECT_UPDATE_FREQUENCY,
+    DEFAULT_PROJECT_UPDATE_FREQUENCY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,6 +47,13 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
         )
         self.config_entry = config_entry
         self.data = {"projects": [], "sensors": []}
+
+        # Contador para actualizaciones periódicas de proyectos
+        self._project_update_counter = 0
+        self._project_update_frequency = options_data.get(
+            CONF_PROJECT_UPDATE_FREQUENCY,
+            config_data.get(CONF_PROJECT_UPDATE_FREQUENCY, DEFAULT_PROJECT_UPDATE_FREQUENCY)
+        )
 
     def _fetch_data(self) -> dict:
         """Fetch all data from Koolnova API. Called during initial setup."""
@@ -83,23 +92,53 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
 
         This method implements a smart polling approach to optimize API usage:
         - FIRST RUN: Fetches complete data (projects + sensors) for initial setup
-        - PERIODIC UPDATES: Only fetches sensors to keep entity states current
+        - PERIODIC UPDATES: Uses counter-based strategy for project updates
+          * Every Nth update: fetches projects + sensors (N = project_update_frequency)
+          * Other updates: fetches only sensors for efficiency
 
         This optimization reduces API load since project data rarely changes,
         while sensor data (temperatures, status) updates frequently.
+        However, project mode is updated periodically to keep Global Control entity current.
 
         Returns:
             dict: Data structure with 'projects' and 'sensors' keys
         """
-        if self.data and self.data.get("projects"):
-            # PERIODIC UPDATE STRATEGY: Only fetch sensors for efficiency
-            # Projects rarely change, sensors update frequently (temp, status, etc.)
-            _LOGGER.debug("Using optimized polling: sensors only (projects cached)")
-            return await self.hass.async_add_executor_job(self._fetch_sensors_only)
-        else:
-            # INITIAL SETUP: Fetch complete dataset
-            _LOGGER.debug("Initial setup: fetching complete dataset (projects + sensors)")
-            return await self.hass.async_add_executor_job(self._fetch_data)
+        try:
+            if self.data and self.data.get("projects"):
+                # PERIODIC UPDATE STRATEGY with project update counter
+                self._project_update_counter += 1
+
+                if self._project_update_counter >= self._project_update_frequency:
+                    # TIME TO UPDATE PROJECTS: fetch complete dataset
+                    _LOGGER.debug("Project update cycle reached (%d/%d): fetching projects + sensors",
+                                self._project_update_counter, self._project_update_frequency)
+                    self._project_update_counter = 0  # Reset counter
+                    return await self.hass.async_add_executor_job(self._fetch_data)
+                else:
+                    # NORMAL UPDATE: Only fetch sensors for efficiency
+                    _LOGGER.debug("Using optimized polling: sensors only (projects cached) - counter: %d/%d",
+                                self._project_update_counter, self._project_update_frequency)
+                    return await self.hass.async_add_executor_job(self._fetch_sensors_only)
+            else:
+                # INITIAL SETUP: Fetch complete dataset and reset counter
+                _LOGGER.debug("Initial setup: fetching complete dataset (projects + sensors)")
+                self._project_update_counter = 0
+                return await self.hass.async_add_executor_job(self._fetch_data)
+        except Exception as err:
+            # Enhanced error handling for authentication failures
+            error_msg = str(err)
+            if "Authentication failed" in error_msg or "429" in error_msg:
+                _LOGGER.warning("Authentication/rate limiting error during data update: %s", err)
+                # For auth failures, return existing data if available to avoid disabling the integration
+                if self.data and (self.data.get("projects") or self.data.get("sensors")):
+                    _LOGGER.info("Returning cached data due to authentication error")
+                    return self.data
+                else:
+                    # No cached data available, re-raise to trigger proper error handling
+                    raise UpdateFailed(f"Authentication failed and no cached data available: {err}")
+            else:
+                # Re-raise other errors
+                raise
 
     def _fetch_projects(self):
         """Fetch only projects from API."""
@@ -156,7 +195,7 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
         """Update specific project in local cache using complete API response."""
         if "projects" in self.data:
             for i, project in enumerate(self.data["projects"]):
-                if project.get("Topic_Id") == topic_id:
+                if project.get("Topic_id") == topic_id:
                     if "mode" in updated_project_data:
                         self.data["projects"][i]["Mode"] = updated_project_data["mode"]
                     if "is_online" in updated_project_data:
@@ -286,21 +325,34 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             raise
 
     async def async_options_updated(self):
-        """Handle updated options - restart coordinator with new interval."""
+        """Handle updated options - update coordinator settings without full restart."""
         config_data = self.config_entry.data
         options_data = self.config_entry.options
-        
+
+        # Update interval
         new_interval_seconds = options_data.get(
             CONF_UPDATE_INTERVAL,
             config_data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
         )
-        
+
         new_interval = timedelta(seconds=new_interval_seconds)
-        
+
         if new_interval != self.update_interval:
-            _LOGGER.info("Updating coordinator interval from %s to %s seconds", 
+            _LOGGER.info("Updating coordinator interval from %s to %s seconds",
                         self.update_interval.total_seconds(), new_interval_seconds)
             self.update_interval = new_interval
+
+        # Update project update frequency
+        new_frequency = options_data.get(
+            CONF_PROJECT_UPDATE_FREQUENCY,
+            config_data.get(CONF_PROJECT_UPDATE_FREQUENCY, DEFAULT_PROJECT_UPDATE_FREQUENCY)
+        )
+
+        if new_frequency != self._project_update_frequency:
+            _LOGGER.info("Updating project update frequency from %s to %s",
+                        self._project_update_frequency, new_frequency)
+            self._project_update_frequency = new_frequency
+            self._project_update_counter = 0  # Reset counter with new frequency
 
     # Backward compatibility methods
     async def async_update_sensor(self, sensor_id: int, payload: dict) -> dict:
