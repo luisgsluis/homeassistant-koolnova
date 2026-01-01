@@ -53,6 +53,11 @@
                     }
                 }
             }
+        },
+        "sensor": {
+            "connectivity_status": {
+                "name": "Connectivity Status"
+            }
         }
     }
 }

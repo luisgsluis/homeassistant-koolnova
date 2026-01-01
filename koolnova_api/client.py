@@ -143,6 +143,8 @@ class KoolnovaAPIRestClient:
             _LOGGER.debug("Topic Info : %s", room.get("topic_info", {}))
             # Récupérer l'id de topic_info
             topic_id = room.get("topic_info", {}).get("id", "Unknown")
+            # Incluir toda la información de topic_info para acceder a RSSI, online, sync
+            topic_info = room.get("topic_info", {})
 
             rooms.append({
                 "Room_Name": room["name"],
@@ -152,7 +154,8 @@ class KoolnovaAPIRestClient:
                 "Room_actual_temp": room["temperature"],
                 "Room_setpoint_temp": room["setpoint_temperature"],
                 "Room_speed": room["speed"],
-                "Topic_id": topic_id 
+                "Topic_id": topic_id,
+                "topic_info": topic_info  # AÑADIDO: Toda la información de conectividad
             })
 
         return rooms
