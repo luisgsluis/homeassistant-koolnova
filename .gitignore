@@ -6,3 +6,4 @@ __pycache__/
 *.log
 .vscode/settings.json
 .env
+.github_token

@@ -8,9 +8,6 @@
   ],
   "domain": "koolnova",
   "repository": "https://github.com/luisgsluis/homeassistant-koolnova",
-  "zip_release": true,
-  "persistent_directory": false,
-  "filename": "koolnova.zip",
   "config_flow": true,
   "iot_class": "cloud_polling",
   "categories": [

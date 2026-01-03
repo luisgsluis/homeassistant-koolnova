@@ -72,28 +72,64 @@ El archivo `hacs.json` DEBE contener los siguientes campos:
 
 ## Proceso de Release
 
-### ⚠️ CRÍTICO: Actualización de Archivos JSON
+### ⚠️ CRÍTICO: Estructura HACS Compatible
 
-Antes de crear un release, **DEBES** actualizar los siguientes archivos:
+**HACS requiere la estructura estándar de GitHub, NO ZIPs personalizados**
 
-1. **`manifest.json`**:
-   - Actualizar el campo `"version"` para que coincida exactamente con el número de versión del tag
-   - Ejemplo: `"version": "1.2.1"` para el tag `v1.2.1`
+### 📁 Estructura de Directorios Requerida
 
-2. **`hacs.json`** (opcional pero recomendado):
-   - Verificar que la versión de Home Assistant sea compatible
-   - Actualizar si es necesario
+```
+ROOT_REPOSITORIO/
+├── custom_components/
+│   └── koolnova/          ← Nombre del dominio
+│       ├── __init__.py
+│       ├── manifest.json  ← Versión DEBE coincidir con el tag
+│       ├── climate.py
+│       └── ... (todos los archivos de la integración)
+├── README.md              ← Documentación en la raíz
+└── hacs.json              ← Configuración HACS en la raíz
+```
 
-### Pasos para Release
+### 🔧 Configuración HACS Requerida (`hacs.json`)
+
+```json
+{
+  "name": "Nombre de la integración",
+  "homeassistant": "versión mínima compatible",
+  "domain": "dominio_exacto",      // DEBE coincidir con manifest.json
+  "repository": "URL_completa_github",
+  "config_flow": true/false,
+  "iot_class": "clase_iot",
+  "categories": ["Categoría"]
+}
+```
+
+**❌ NO usar**:
+- `"zip_release": true` (HACS usa archivos estándar de GitHub)
+- `"filename": "custom.zip"` (No se permiten ZIPs personalizados)
+
+### Pasos para Release HACS Compatible
 
 1. **Desarrollo**: Implementar cambios en rama `main`
 2. **Testing**: Verificar funcionamiento en HA
-3. **Actualización de JSON**: Actualizar `manifest.json` con la nueva versión
+3. **Actualización de JSON**:
+   - `manifest.json`: Actualizar `"version"` para que coincida con el tag
+   - `hacs.json`: Verificar que `"domain"` coincida con `manifest.json`
 4. **Commit**: `git commit -m "Release vX.Y.Z"`
 5. **Tag**: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`
 6. **Push**: `git push origin main --tags`
-7. **Crear Release en GitHub**: El workflow automático generará el asset ZIP
+7. **Crear Release en GitHub**: Usar la interfaz de GitHub (NO workflows personalizados)
 8. **HACS**: Los usuarios pueden actualizar vía HACS
+
+### 🎯 Requisitos Clave HACS
+
+- **Estructura**: GitHub estándar (`repositorio-versión/custom_components/dominio/...`)
+- **Archivos obligatorios**:
+  - `custom_components/koolnova/manifest.json` (con versión correcta)
+  - `hacs.json` (en raíz, con dominio correcto)
+  - `README.md` (en raíz)
+- **Versiones**: El tag y `manifest.json` DEBEN coincidir exactamente
+- **Releases**: Crear releases estándar de GitHub (sin assets personalizados)
 
 ### ❌ Error Común: Version Mismatch
 
