@@ -23,9 +23,31 @@ La integración es compatible con HACS (Home Assistant Community Store):
 
 ### Requisitos para HACS
 - `manifest.json` con metadata correcta
-- `hacs.json` opcional para configuración adicional
+- `hacs.json` con configuración completa (requerido para HACS)
 - Archivos de traducción en `translations/`
 - Documentación clara
+
+### Configuración HACS Requerida (`hacs.json`)
+
+El archivo `hacs.json` DEBE contener los siguientes campos:
+
+```json
+{
+  "name": "Nombre de la integración",
+  "homeassistant": "versión mínima compatible",
+  "domain": "dominio_de_la_integracion",
+  "repository": "https://github.com/usuario/repositorio",
+  "zip_release": true,
+  "config_flow": true,
+  "iot_class": "clase_iot",
+  "categories": ["Categoría principal"]
+}
+```
+
+**Campos críticos**:
+- `"domain"`: DEBE coincidir exactamente con el dominio en `manifest.json`
+- `"zip_release"`: DEBE ser `true` para releases basados en ZIP
+- `"repository"`: URL completa del repositorio GitHub
 
 ## Changelog
 
