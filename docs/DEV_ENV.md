@@ -1,5 +1,40 @@
 # Entorno de Desarrollo Koolnova Integration
 
+## 🚨 Información Crítica para Desarrolladores
+
+**ANTES DE CUALQUIER CAMBIO EN EL CÓDIGO:**
+
+Cuando abras un chat con Cline (tu asistente de desarrollo), **DEBE** leer automáticamente toda la documentación del proyecto para entender el contexto completo. Ejecuta este comando al inicio de cada sesión:
+
+```bash
+cline "Lee y comprende toda la documentación del proyecto Koolnova. Revisa especialmente ARCHITECTURE.md, TROUBLESHOUTING.md y DEV_ENV.md para entender las reglas críticas de desarrollo."
+```
+
+## ⚠️ Reglas Críticas de Desarrollo
+
+### 1. Imports - NUNCA VIOLAR
+- ✅ **CORRECTO**: `from .koolnova_api.client import ...`
+- ❌ **ERROR CRÍTICO**: `from koolnovaapi.client import ...`
+
+### 2. Arquitectura Resuelta
+- **Imports relativos**: Para estabilidad absoluta
+
+### 3. Testing Obligatorio
+- Limpiar caché Python después de cambios en imports
+- Verificar logs sin errores antes de commits
+- Probar configuración desde UI de HA
+
+## 📋 Checklist para Desarrolladores
+
+Antes de cualquier cambio:
+- [ ] Leer ARCHITECTURE.md completamente
+- [ ] Verificar reglas de imports
+- [ ] Limpiar caché Python
+- [ ] Probar integración después de cambios
+- [ ] Actualizar documentación si aplica
+
+**Recuerda**: La estabilidad del proyecto depende del cumplimiento estricto de estas reglas.
+
 ## ⚠️ Importante: Arquitectura de Imports
 
 ### Cambio Crítico en Desarrollo
