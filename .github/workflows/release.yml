@@ -14,18 +14,8 @@ jobs:
 
     - name: Create clean integration directory
       run: |
-        mkdir -p clean-release/custom_components/koolnova
-        # Copy only integration files, exclude docs/ and tests/
-        cp -r __init__.py clean-release/custom_components/koolnova/
-        cp -r climate.py clean-release/custom_components/koolnova/
-        cp -r config_flow.py clean-release/custom_components/koolnova/
-        cp -r const.py clean-release/custom_components/koolnova/
-        cp -r coordinator.py clean-release/custom_components/koolnova/
-        cp -r hacs.json clean-release/custom_components/koolnova/
-        cp -r manifest.json clean-release/custom_components/koolnova/
-        cp -r strings.json clean-release/custom_components/koolnova/
-        cp -r koolnova_api/ clean-release/custom_components/koolnova/
-        cp -r translations/ clean-release/custom_components/koolnova/
+        # Copy the entire custom_components directory (which contains only the integration files)
+        cp -r custom_components/ clean-release/
 
     - name: Create ZIP archive
       run: |
