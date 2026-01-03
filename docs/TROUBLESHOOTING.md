@@ -23,28 +23,6 @@ Conflicto entre:
 - Todas las operaciones API funcionan correctamente
 - Logs muestran actividad normal del coordinator
 
----
-
-## Logs de Home Assistant
-
-Para ver los logs de HA y la integración:
-
-```bash
-docker logs homeassistant
-```
-
-O en tiempo real:
-
-```bash
-docker logs -f homeassistant
-```
-
-También puedes revisar el archivo de logs principal:
-
-```bash
-tail -f /home/admin/docker/homeassistant/config/home-assistant.log
-```
-
 ## Errores Comunes
 
 ### Error 404/400 en API (Falta User-Agent)
@@ -136,6 +114,6 @@ curl -H "User-Agent: Mozilla/5.0" \
 
 ## Contacto y Soporte
 
-- **Issues**: https://github.com/luisgsluis/ha-koolnova/issues
+- **Issues**: https://github.com/luisgsluis/homeassistant-koolnova/issues
 - **Logs**: Incluir logs relevantes al reportar bugs
 - **Versión**: Especificar versión de HA y integración

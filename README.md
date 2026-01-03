@@ -26,11 +26,8 @@ cline "Lee y comprende toda la documentación del proyecto Koolnova. Revisa espe
 ### 1. Imports - NUNCA VIOLAR
 - ✅ **CORRECTO**: `from .koolnova_api.client import ...`
 - ❌ **ERROR CRÍTICO**: `from koolnovaapi.client import ...`
-- ❌ **ERROR CRÍTICO**: Instalar paquetes PyPI externos
 
 ### 2. Arquitectura Resuelta
-- **Módulo local**: `koolnova_api/` (con guión bajo)
-- **Paquete PyPI eliminado**: Conflicto resuelto
 - **Imports relativos**: Para estabilidad absoluta
 
 ### 3. Testing Obligatorio
@@ -88,7 +85,7 @@ cline "Lee y comprende toda la documentación del proyecto Koolnova. Revisa espe
 - Headers específicos para API de Koolnova
 - Manejo robusto de errores y reconexiones
 
-## Logs y Debugging
+## Logs y Debugging (para HA corriendo como contenedor)
 
 ```bash
 # Ver logs en tiempo real
@@ -137,7 +134,7 @@ tail -f /config/home-assistant.log
 
 ## Soporte
 
-- **Issues**: [GitHub Issues](https://github.com/luisgsluis/ha-koolnova/issues)
+- **Issues**: [GitHub Issues](https://github.com/luisgsluis/homeassistant-koolnova/issues)
 - **Documentación**: [docs/](docs/) folder
 - **Licencia**: MIT
 

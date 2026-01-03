@@ -1,0 +1,43 @@
+name: Create Clean HACS Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  create-clean-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Create clean integration directory
+      run: |
+        mkdir -p clean-release/custom_components/koolnova
+        # Copy only integration files, exclude docs/ and tests/
+        cp -r __init__.py clean-release/custom_components/koolnova/
+        cp -r climate.py clean-release/custom_components/koolnova/
+        cp -r config_flow.py clean-release/custom_components/koolnova/
+        cp -r const.py clean-release/custom_components/koolnova/
+        cp -r coordinator.py clean-release/custom_components/koolnova/
+        cp -r hacs.json clean-release/custom_components/koolnova/
+        cp -r manifest.json clean-release/custom_components/koolnova/
+        cp -r strings.json clean-release/custom_components/koolnova/
+        cp -r koolnova_api/ clean-release/custom_components/koolnova/
+        cp -r translations/ clean-release/custom_components/koolnova/
+
+    - name: Create ZIP archive
+      run: |
+        cd clean-release
+        zip -r ../koolnova.zip .
+
+    - name: Upload release asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./koolnova.zip
+        asset_name: koolnova.zip
+        asset_content_type: application/zip

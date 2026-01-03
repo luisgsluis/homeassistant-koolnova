@@ -7,7 +7,7 @@ La integración Koolnova para Home Assistant está estructurada como una integra
 ### Problema Original
 La integración sufrió un conflicto crítico de imports entre:
 - **Paquete PyPI**: `koolnova-api` (con guión) - distribución externa instalada
-- **Módulo local**: `koolnovaapi` (sin guión) - código fuente local
+- **Módulo local**: `koolnovaapi` (sin guión) - código fuente local - fork de koolnova-api, todos los créditos al desarrollador original
 
 ### Solución Implementada
 - **Eliminado paquete PyPI conflictivo** que causaba errores 404

@@ -2,13 +2,7 @@
 
 ## Versionado
 
-Las versiones se gestionan en `manifest.json`:
-
-```json
-{
-  "version": "1.1.0"
-}
-```
+Las versiones se gestionan en `manifest.json`
 
 ### Esquema de Versionado
 - **MAJOR**: Cambios incompatibles en la API o funcionalidad
@@ -19,18 +13,13 @@ Las versiones se gestionan en `manifest.json`:
 
 Crear tags para cada release:
 
-```bash
-git tag -a v1.1.0 -m "Release v1.1.0: Descripción de cambios"
-git push origin v1.1.0
-```
-
 ## Compatible con HACS
 
 La integración es compatible con HACS (Home Assistant Community Store):
 
 - **Tipo**: Integration
 - **Método de instalación**: GitHub release
-- **URL del repositorio**: https://github.com/luisgsluis/ha-koolnova
+- **URL del repositorio**: https://github.com/luisgsluis/homeassistant-koolnova
 
 ### Requisitos para HACS
 - `manifest.json` con metadata correcta

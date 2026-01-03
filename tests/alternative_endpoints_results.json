@@ -1,0 +1,278 @@
+{
+  "🔄 CONTROL/POWER": {
+    "control/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "control/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "control/reboot": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "power/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "power/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "power/reboot": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "manage/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "manage/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "manage/reboot": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    }
+  },
+  "🌐 NETWORKING": {
+    "network/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "network/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "network/reload": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "connection/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "connection/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "connection/reload": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "connectivity/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "connectivity/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "interface/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "interface/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    }
+  },
+  "📡 MQTT/COMMS": {
+    "mqtt/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "mqtt/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "mqtt/reconnect": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "mqtt/reload": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "communication/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "communication/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "link/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "link/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "link/reconnect": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    }
+  },
+  "⚙️ MAINTENANCE": {
+    "maintenance/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "maintenance/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "service/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "service/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "service/reload": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "daemon/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "daemon/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    }
+  },
+  "🔧 ADMIN": {
+    "admin/restart": {
+      "code": "302",
+      "classification": "🤔 OTRO: 302"
+    },
+    "admin/reset": {
+      "code": "302",
+      "classification": "🤔 OTRO: 302"
+    },
+    "admin/reload": {
+      "code": "302",
+      "classification": "🤔 OTRO: 302"
+    },
+    "superuser/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "superuser/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "root/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "root/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    }
+  },
+  "📊 SYSTEM": {
+    "system/control": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "system/power": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "system/manage": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "platform/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "platform/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "core/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "core/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "core/reload": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    }
+  },
+  "🏠 HOME AUTOMATION": {
+    "home/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "home/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "home/reload": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "automation/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "automation/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "smart/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "smart/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    }
+  },
+  "🔗 INTEGRATION": {
+    "integration/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "integration/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "integration/reload": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "api/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "api/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "api/reload": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "endpoint/restart": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    },
+    "endpoint/reset": {
+      "code": "404",
+      "classification": "❌ NO EXISTE"
+    }
+  }
+}
