@@ -17,9 +17,10 @@ jobs:
 
     - name: Create clean integration directory
       run: |
-        mkdir -p clean-release
-        # Copy only the custom_components directory
-        cp -r custom_components/ clean-release/
+        mkdir -p clean-release/custom_components/koolnova
+        # Copy only integration files, exclude docs, tests, README, .github
+        cp __init__.py climate.py config_flow.py const.py coordinator.py manifest.json strings.json clean-release/custom_components/koolnova/
+        cp -r koolnova_api/ translations/ clean-release/custom_components/koolnova/
 
     - name: Create ZIP archive
       run: |
