@@ -50,13 +50,40 @@ La integración es compatible con HACS (Home Assistant Community Store):
 
 ## Proceso de Release
 
+### ⚠️ CRÍTICO: Actualización de Archivos JSON
+
+Antes de crear un release, **DEBES** actualizar los siguientes archivos:
+
+1. **`manifest.json`**:
+   - Actualizar el campo `"version"` para que coincida exactamente con el número de versión del tag
+   - Ejemplo: `"version": "1.2.1"` para el tag `v1.2.1`
+
+2. **`hacs.json`** (opcional pero recomendado):
+   - Verificar que la versión de Home Assistant sea compatible
+   - Actualizar si es necesario
+
+### Pasos para Release
+
 1. **Desarrollo**: Implementar cambios en rama `main`
 2. **Testing**: Verificar funcionamiento en HA
-3. **Versionado**: Actualizar versión en `manifest.json`
+3. **Actualización de JSON**: Actualizar `manifest.json` con la nueva versión
 4. **Commit**: `git commit -m "Release vX.Y.Z"`
-5. **Tag**: `git tag -a vX.Y.Z`
+5. **Tag**: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`
 6. **Push**: `git push origin main --tags`
-7. **HACS**: Los usuarios pueden actualizar vía HACS
+7. **Crear Release en GitHub**: El workflow automático generará el asset ZIP
+8. **HACS**: Los usuarios pueden actualizar vía HACS
+
+### ❌ Error Común: Version Mismatch
+
+**PROBLEMA**: Si `manifest.json` no coincide con el tag, HACS mostrará:
+```
+Downloading luisgsluis/homeassistant-koolnova with version vX.Y.Z failed with (No content to download)
+```
+
+**SOLUCIÓN**: Asegúrate de que:
+- El tag sea `v1.2.1`
+- `manifest.json` tenga `"version": "1.2.1"`
+- Ambos sean idénticos (sin prefijos/sufijos)
 
 ## Distribución
 
