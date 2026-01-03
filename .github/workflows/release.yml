@@ -8,26 +8,29 @@ jobs:
   create-clean-release:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Create clean integration directory
       run: |
-        # Copy the entire custom_components directory (which contains only the integration files)
+        mkdir -p clean-release
+        # Copy only the custom_components directory
         cp -r custom_components/ clean-release/
 
     - name: Create ZIP archive
       run: |
         cd clean-release
         zip -r ../koolnova.zip .
+        echo "ZIP created successfully"
+        ls -la ../koolnova.zip
 
     - name: Upload release asset
-      uses: actions/upload-release-asset@v1
+      uses: softprops/action-gh-release@v1
+      with:
+        files: koolnova.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./koolnova.zip
-        asset_name: koolnova.zip
-        asset_content_type: application/zip
