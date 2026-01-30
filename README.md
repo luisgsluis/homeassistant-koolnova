@@ -54,6 +54,3 @@ Para desarrolladores y usuarios avanzados, consulta la documentación detallada:
 - **Documentación**: [docs/](docs/) folder
 - **Licencia**: MIT
 
----
-
-**Para desarrolladores**: Consulta **[DEV_ENV.md](docs/DEV_ENV.md)** antes de realizar cualquier cambio en el código.
