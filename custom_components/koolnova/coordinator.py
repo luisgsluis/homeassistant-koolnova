@@ -133,7 +133,7 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
                         "success": True,
                         "timestamp": datetime.now().isoformat(),
                         "entry_id": self.config_entry.entry_id,
-                        "lastsync": result.get("projects", [{}])[0].get("lastsync") if result.get("projects") else None,
+                        "lastsync": result.get("projects", [{}])[0].get("last_sync") if result.get("projects") else None,
                         "projects_count": len(result.get("projects", [])),
                         "sensors_count": len(result.get("sensors", []))
                     })
@@ -151,7 +151,7 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
                         "success": True,
                         "timestamp": datetime.now().isoformat(),
                         "entry_id": self.config_entry.entry_id,
-                        "lastsync": self.data.get("projects", [{}])[0].get("lastsync") if self.data.get("projects") else None,
+                        "lastsync": self.data.get("projects", [{}])[0].get("last_sync") if self.data.get("projects") else None,
                         "sensors_count": len(result.get("sensors", []))
                     })
                     
@@ -168,7 +168,7 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
                     "success": True,
                     "timestamp": datetime.now().isoformat(),
                     "entry_id": self.config_entry.entry_id,
-                    "lastsync": result.get("projects", [{}])[0].get("lastsync") if result.get("projects") else None,
+                    "lastsync": result.get("projects", [{}])[0].get("last_sync") if result.get("projects") else None,
                     "projects_count": len(result.get("projects", [])),
                     "sensors_count": len(result.get("sensors", []))
                 })
@@ -190,7 +190,7 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
                         "error": "authentication_failed",
                         "timestamp": datetime.now().isoformat(),
                         "entry_id": self.config_entry.entry_id,
-                        "lastsync": self.data.get("projects", [{}])[0].get("lastsync") if self.data.get("projects") else None
+                        "lastsync": self.data.get("projects", [{}])[0].get("last_sync") if self.data.get("projects") else None
                     })
                     
                     return self.data
