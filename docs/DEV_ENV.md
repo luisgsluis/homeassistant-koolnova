@@ -1,103 +1,90 @@
-# Entorno de Desarrollo Koolnova Integration
+# Development Environment for the Koolnova Integration
 
-## 🚨 Información Crítica para Desarrolladores
+## 🚨 Critical Information for Developers
 
-**ANTES DE CUALQUIER CAMBIO EN EL CÓDIGO:**
-
-Cuando abras un chat con Cline (tu asistente de desarrollo), **DEBE** leer automáticamente toda la documentación del proyecto para entender el contexto completo. Ejecuta este comando al inicio de cada sesión:
+**BEFORE ANY CODE CHANGE:**  
+When you open a chat with Cline (your development assistant), **MUST** automatically read all project documentation to understand the full context. Run this command at the start of each session:
 
 ```bash
-cline "Lee y comprende toda la documentación del proyecto Koolnova. Revisa especialmente ARCHITECTURE.md, TROUBLESHOUTING.md y DEV_ENV.md para entender las reglas críticas de desarrollo."
+cline "Read and understand the entire Koolnova project documentation. Pay particular attention to ARCHITECTURE.md, TROUBLESHOOTING.md and DEV_ENV.md for critical development rules."
 ```
 
-## ⚠️ Reglas Críticas de Desarrollo
+## ⚠️ Critical Development Rules
 
-### 1. Imports - NUNCA VIOLAR
-- ✅ **CORRECTO**: `from .koolnova_api.client import ...`
-- ❌ **ERROR CRÍTICO**: `from koolnovaapi.client import ...`
+### 1. Imports – NEVER BREAK
+- ✅ **Correct**: `from .koolnova_api.client import …`
+- ❌ **Critical error**: `from koolnovaapi.client import …`
 
-### 2. Arquitectura Resuelta
-- **Imports relativos**: Para estabilidad absoluta
+### 2. Resolved Architecture
+- **Relative imports** are required for absolute stability.
 
-### 3. Testing Obligatorio
-- Limpiar caché Python después de cambios en imports
-- Verificar logs sin errores antes de commits
-- Probar configuración desde UI de HA
+### 3. Mandatory Testing
+- Clear Python cache after any import changes.
+- Verify logs contain no errors before committing.
+- Test the integration via the Home Assistant UI.
 
-## 📋 Checklist para Desarrolladores
+## 📋 Developer Checklist
 
-Antes de cualquier cambio:
-- [ ] Leer ARCHITECTURE.md completamente
-- [ ] Verificar reglas de imports
-- [ ] Limpiar caché Python
-- [ ] Probar integración después de cambios
-- [ ] Actualizar documentación si aplica
+Before any change:
+- [ ] Read `ARCHITECTURE.md` completely.
+- [ ] Verify import rules are followed.
+- [ ] Clear Python cache (`find . -type d -name __pycache__ -exec rm -r {} +`).
+- [ ] Test the integration after any change.
+- [ ] Update documentation if behavior changes.
 
-**Recuerda**: La estabilidad del proyecto depende del cumplimiento estricto de estas reglas.
+**Remember**: Project stability depends on strict adherence to these rules.
 
-## ⚠️ Importante: Arquitectura de Imports
+## ⚠️ Import Architecture (Re‑emphasized)
 
-### Cambio Crítico en Desarrollo
-- **Antes**: Módulo local se llamaba `koolnovaapi` (sin guión)
-- **Ahora**: Módulo local se llama `koolnova_api` (con guión bajo)
-- **Imports**: Usar siempre imports relativos `from .koolnova_api.client import ...`
-- **Nunca usar**: Imports absolutos como `from koolnovaapi.client import ...`
+### Critical Change in Development
+- **Before**: Local module named `koolnovaapi` (no hyphen).
+- **Now**: Local module renamed to `koolnova_api` (underscore).
+- **Imports**: Always use relative imports `from .koolnova_api.client import …`.
+- **Never use**: Absolute imports like `from koolnovaapi.client import …`.
 
-### ¿Por qué este cambio?
-Resolvió conflicto crítico entre:
-- Paquete PyPI `koolnova-api` (causaba errores 404)
-- Módulo local `koolnovaapi` (código fuente)
+### Why this change?
+Resolved a critical conflict between:
+- PyPI package `koolnova-api` (caused 404 errors).
+- Local module `koolnovaapi` (source code).
 
-### Regla de Oro en Desarrollo
-🔴 **SIEMPRE limpiar caché Python** después de cambios en imports
+### Golden Rule in Development
+🔴 **ALWAYS clear Python cache** after any import changes.
 
----
+## VS Code Remote‑SSH Setup
+1. Development folder locally at `$HOME/homeassistant/config/custom_components/koolnova`.
 
-## Configuración VS Code Remote SSH
+## Using Cline
+Cline is a development helper that runs commands inside the container. To use Cline:
+- Run commands in the integrated terminal.
+- Edit files directly.
+- Manage version control with Git.
 
-1. Carpeta de proyecto desarrollo en local con docker  `$HOME/homeassistant/config/custom_components/koolnova`
-
-## Uso de Cline
-
-Cline es una herramienta de desarrollo que facilita la gestión del código. Para usar Cline:
-
-- Ejecuta comandos en la terminal integrada
-- Realiza cambios en archivos directamente
-- Gestiona el control de versiones con Git
-
-## Ruta de Desarrollo
-
-La integración se desarrolla en:
-```
+## Development Path
+The integration is developed at:
+```bash
 $HOME/docker/homeassistant/config/custom_components/koolnova
 ```
 
-## Reinicio de Home Assistant
-
-Después de realizar cambios en el código, reinicia Home Assistant para que tome los cambios:
-
+## Restart Home Assistant
+After code changes, restart Home Assistant to load the new code:
 ```bash
 docker restart homeassistant
 ```
 
-## Testing antes de Push
+## Pre‑Push Testing
+Before pushing to GitHub, always test the integration:
+1. Restart HA: `docker restart homeassistant`
+2. Check logs for errors: `docker logs homeassistant`
+3. Tail detailed logs: `tail -f $HOME/docker/homeassistant/config/home-assistant.log`
+4. Verify configuration via the HA UI.
+5. Confirm entities work correctly.
+Use Chrome locally to access HA during testing.
 
-Antes de hacer push a GitHub, siempre prueba la integración:
-
-1. Reinicia HA con `docker restart homeassistant`
-2. Verifica que no hay errores en logs: `docker logs homeassistant`
-3. Revisa logs detallados: `tail -f $HOME/docker/homeassistant/config/home-assistant.log`
-4. Prueba la configuración desde la UI de HA
-5. Verifica que las entidades funcionan correctamente
-
-Usa Chrome en local para acceder a HA durante las pruebas.
-
-## Estructura del Proyecto
-
-- `koolnova_api/`: Cliente API para Koolnova (con __init__.py para paquete válido)
-- `__init__.py`: Inicialización de la integración
-- `coordinator.py`: Coordinador de datos
-- `climate.py`: Entidades climáticas
-- `config_flow.py`: Flujo de configuración
-- `const.py`: Constantes y mapeos
-- `docs/`: Documentación
+## Project Structure
+- `koolnova_api/` – API client (contains `__init__.py` to make it a valid package).
+- `__init__.py` – Integration initialization.
+- `coordinator.py` – Data coordinator.
+- `climate.py` – Climate entities.
+- `config_flow.py` – Configuration flow.
+- `const.py` – Constants and mappings.
+- `docs/` – Documentation.

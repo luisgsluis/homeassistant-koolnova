@@ -1,45 +1,45 @@
-# Documentación API Koolnova
+# Koolnova API Documentation
 
-Esta integración consume la API REST de Koolnova para controlar sistemas HVAC. La API está implementada con Django REST framework y está disponible en https://api.koolnova.com/.
+This integration consumes the Koolnova REST API to control HVAC systems. The API is implemented with Django REST Framework and is available at `https://api.koolnova.com/`.
 
-## Endpoints Utilizados
+## Endpoints Used
 
-### GET /projects/
-- **Descripción**: Obtiene la lista de proyectos
-- **Parámetros de consulta**:
+### GET `/projects/`
+- **Description**: Retrieves the list of projects.
+- **Query parameters**:
   - `page`: 1
   - `page_size`: 25
-  - `ordering`: -start_date
-  - `search`: ""
+  - `ordering`: `-start_date`
+  - `search`: `""`
   - `is_oem`: false
-- **Respuesta**: Lista de proyectos con información de topic
+- **Response**: List of projects with topic information.
 
-### GET /topics/sensors/
-- **Descripción**: Obtiene la lista de sensores/zonas
-- **Respuesta**: Lista de sensores con temperatura, setpoint, status, velocidad
+### GET `/topics/sensors/`
+- **Description**: Retrieves the list of sensors/zones.
+- **Response**: List of sensors with temperature, setpoint, status, fan speed, etc.
 
-### PATCH /topics/sensors/{sensor_id}/
-- **Descripción**: Actualiza un sensor específico
-- **Parámetros**:
-  - `sensor_id`: ID del sensor
-- **Payloads admitidos**:
-  - `{"setpoint_temperature": float}` - Temperatura objetivo
-  - `{"status": "00|01|02|03"}` - Estado HVAC (COOL/HEAT/OFF/AUTO)
-  - `{"speed": "1|2|3|4"}` - Velocidad ventilador (LOW/MEDIUM/HIGH/AUTO)
+### PATCH `/topics/sensors/{sensor_id}/`
+- **Description**: Updates a specific sensor.
+- **Path parameter**:
+  - `sensor_id`: ID of the sensor.
+- **Supported payloads**:
+  - `{"setpoint_temperature": float}` – Target temperature.
+  - `{"status": "00|01|02|03"}` – HVAC status (COOL/HEAT/OFF/AUTO).
+  - `{"speed": "1|2|3|4"}` – Fan speed (LOW/MEDIUM/HIGH/AUTO).
 
-### PATCH /topics/{topic_id}/
-- **Descripción**: Actualiza un proyecto/topic
-- **Parámetros**:
-  - `topic_id`: ID del topic/proyecto
-- **Payloads admitidos**:
-  - `{"mode": "1|2|4|6"}` - Modo proyecto (COOL/OFF/AUTO/HEAT)
-  - `{"eco": boolean}` - Modo ECO
-  - `{"is_online": boolean}` - Estado online
-  - `{"is_stop": boolean}` - Estado stop
+### PATCH `/topics/{topic_id}/`
+- **Description**: Updates a project/topic.
+- **Path parameter**:
+  - `topic_id`: ID of the topic/project.
+- **Supported payloads**:
+  - `{"mode": "1|2|4|6"}` – Project mode (COOL/OFF/AUTO/HEAT).
+  - `{"eco": boolean}` – ECO mode.
+  - `{"is_online": boolean}` – Online status.
+  - `{"is_stop": boolean}` – Stop status.
 
-## Headers Requeridos
+## Required Headers
 
-Todos los requests deben incluir:
+All requests must include:
 
 ```
 User-Agent: Mozilla/5.0 (REQUIRED)
@@ -48,69 +48,75 @@ accept-language: fr
 origin: https://app.koolnova.com
 referer: https://app.koolnova.com/
 cache-control: no-cache
-content-type: application/json (para PATCH)
+content-type: application/json (for PATCH only)
 ```
 
-## Payloads de Ejemplo
+## Example Payloads
 
-### Actualizar temperatura de zona
+### Update zone temperature
 ```json
 {
   "setpoint_temperature": 24.5
 }
 ```
 
-### Cambiar modo HVAC de zona
+### Change zone HVAC mode
 ```json
 {
   "status": "00"
 }
 ```
 
-### Cambiar velocidad ventilador
+### Change fan speed
 ```json
 {
   "speed": "2"
 }
 ```
 
-### Cambiar modo del proyecto
+### Change project mode
 ```json
 {
   "mode": "1"
 }
 ```
 
-## Errores Típicos
+## Typical Errors
 
 ### 400 Bad Request
-- **Causa**: Payload mal formado o parámetros inválidos
-- **Solución**: Verificar que los valores estén en el rango permitido
+- **Cause**: Malformed payload or invalid parameters.
+- **Solution**: Verify values are within allowed ranges.
 
 ### 404 Not Found
-- **Causa**: Endpoint incorrecto o ID no existe
-- **Solución**: Verificar IDs y URLs
+- **Cause**: Incorrect endpoint or ID does not exist.
+- **Solution**: Check IDs and URLs.
 
-### Error de Autenticación
-- **Causa**: Credenciales inválidas o sesión expirada
-- **Solución**: Reconfigurar la integración con credenciales correctas
+### Authentication Error
+- **Cause**: Invalid or expired credentials.
+- **Solution**: Reconfigure integration with correct credentials.
 
-## Mapeos de Códigos
+## Code Mappings
 
-### Modos Proyecto
-- `"1"`: COOL
-- `"2"`: OFF
-- `"4"`: AUTO
-- `"6"`: HEAT
+### Project Modes
+| Code | Meaning |
+|------|---------|
+| `"1"` | COOL |
+| `"2"` | OFF |
+| `"4"` | AUTO |
+| `"6"` | HEAT |
 
-### Estados Zona
-- `"00"`: COOL
-- `"01"`: HEAT
-- `"02"`: OFF
-- `"03"`: AUTO
+### Zone Status Codes
+| Code | Meaning |
+|------|---------|
+| `"00"` | COOL |
+| `"01"` | HEAT |
+| `"02"` | OFF |
+| `"03"` | AUTO |
 
-### Velocidades Ventilador
-- `"1"`: LOW
-- `"2"`: MEDIUM
-- `"3"`: HIGH
-- `"4"`: AUTO
+### Fan Speed Codes
+| Code | Meaning |
+|------|---------|
+| `"1"` | LOW |
+| `"2"` | MEDIUM |
+| `"3"` | HIGH |
+| `"4"` | AUTO |

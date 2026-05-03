@@ -1,56 +1,56 @@
 # Koolnova Home Assistant Integration
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![HACS badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
-Integración personalizada para Home Assistant que permite controlar sistemas HVAC Koolnova a través de su API REST.
+A custom integration for Home Assistant that lets you control Koolnova HVAC systems via the Koolnova REST API.
 
-## 📋 Documentación Completa
+## 📍 Full Documentation
 
-Para desarrolladores y usuarios avanzados, consulta la documentación detallada:
+For developers and advanced users, see the detailed docs:
 
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Arquitectura y reglas de imports
-- **[TROUBLESHOOTING.md](docs/TROUBLESHOUTING.md)** - Problemas comunes y soluciones
-- **[DEV_ENV.md](docs/DEV_ENV.md)** - Configuración del entorno de desarrollo
-- **[API.md](docs/API.md)** - Documentación de la API de Koolnova
-- **[RELEASE.md](docs/RELEASE.md)** - Historial de versiones y proceso de release
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** – Architecture and import rules
+- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** – Common problems and solutions
+- **[DEV_ENV.md](docs/DEV_ENV.md)** – Development\-environment setup
+- **[API.md](docs/API.md)** – Koolnova API reference
+- **[RELEASE.md](docs/RELEASE.md)** – Release history and process
 
-## Características
+### Features
 
-- 🌡️ Control individual de temperatura por zona
-- ❄️ Control de modos HVAC (COOL/HEAT/AUTO/OFF)
-- 🌬️ Control de velocidad de ventiladores
-- 🏠 Control global del proyecto
-- 🔄 Polling inteligente (sensores cada minuto, proyectos cacheados)
-- 🎛️ Configuración avanzada vía UI
+- 🌡️ Per-₆ zone temperature control
+- ❄️ HVAC mode control (COOL / HEAT / AUTO / OFF)
+- 🌬️ Fan-speed control
+- 🏠 Global project control
+- 🔔 Smart polling (sensor updates every minute, cached projects)
+- 📍️ Advanced UI configuration
 
-## Instalación
+### Installation
 
-### HACS (Recomendado)
-1. Agregar este repositorio como integración custom en HACS
-2. Buscar "Koolnova" en la tienda
-3. Instalar y reiniciar Home Assistant
+#### HACS (recommended)
+1. Add this repository as a custom integration in HACS.
+2. Search for \"Koolnova\" in the store.
+3. Install it and restart Home Assistant.
 
-### Manual
-1. Copiar `custom_components/koolnova/` a tu directorio de configuraciones
-2. Reiniciar Home Assistant
-3. Configurar vía UI
+#### Manual
+1. Copy `custom_components/koolnova/` into your Home Assistant configuration directory.
+2. Restart Home Assistant.
+3. Configure the integration via the UI.
 
-## Configuración
+### Configuration
 
-1. Ir a **Configuración** → **Dispositivos y Servicios** → **Agregar Integración**
-2. Buscar **"Koolnova"**
-3. Ingresar credenciales de la app Koolnova
-4. Configurar opciones avanzadas (opcional)
+1. Open **Configuration → Devices & Services → Add Integration**.
+2. Search for \"Koolnova\".
+3. Enter your Koolnova app credentials.
+4. (Optional) Adjust advanced options.
 
-### Opciones Disponibles
-- **Intervalo de actualización**: 30-3600 segundos
-- **Modos HVAC del proyecto**: Seleccionar modos disponibles
-- **Modos HVAC de zonas**: Seleccionar modos por zona
-- **Rango de temperatura**: Mín/Máx configurables
+#### Available Options
 
-## Soporte
+- **Update interval** – 30 – 3600 seconds
+- **Project–level HVAC modes** – select available modes
+- **Zone–level HVAC modes** – select per-zone modes
+- **Temperature range** – configurable min / max values
+
+### Support
 
 - **Issues**: [GitHub Issues](https://github.com/luisgsluis/homeassistant-koolnova/issues)
-- **Documentación**: [docs/](docs/) folder
-- **Licencia**: MIT
-
+- **Documentation**: the `docs/` folder
+- **License**: MIT
