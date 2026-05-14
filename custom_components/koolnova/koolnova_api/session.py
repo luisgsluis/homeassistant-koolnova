@@ -40,14 +40,12 @@ class KoolnovaClientSession(Session):
         Session.__init__(self)
         _LOGGER.debug("Starting authentication for username '%s' (email: %s)", username, email)
 
-        # Build payload: prefer explicit email param; if not provided but username
-        # looks like an email address, send it as 'email' as well (matches web app)
-        if email:
-            payload = {"email": email, "password": password}
-        elif username and "@" in username:
-            payload = {"email": username, "password": password}
-        else:
-            payload = {"username": username or "", "password": password}
+        # Build payload: support both username and email for better compatibility
+        payload = {
+            "username": username or "",
+            "email": email or (username if "@" in username else ""),
+            "password": password
+        }
 
         _LOGGER.debug("Auth payload: %s", payload)
 
