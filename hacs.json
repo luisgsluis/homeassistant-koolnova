@@ -2,16 +2,6 @@
   "name": "Koolnova",
   "homeassistant": "2025.12.0",
   "render_readme": true,
-  "render_changelog": true,
-  "country": [
-    "ES"
-  ],
-  "domain": "koolnova",
-  "repository": "https://github.com/luisgsluis/homeassistant-koolnova",
-  "config_flow": true,
-  "iot_class": "cloud_polling",
-  "categories": [
-    "HVAC"
-  ],
+  "country": ["ES"],
   "hide_default_branch": false
 }

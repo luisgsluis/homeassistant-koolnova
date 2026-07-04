@@ -17,6 +17,9 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # "brands" requiere estar en home-assistant/brands (PR externo).
+          # Se ignora porque se distribuye como repositorio custom de HACS.
+          ignore: brands
 
   hassfest:
     name: Hassfest

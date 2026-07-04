@@ -13,6 +13,7 @@ from .koolnova_api.exceptions import KoolnovaError
 from .const import (
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
+    MIN_UPDATE_INTERVAL,
     CONF_PROJECT_UPDATE_FREQUENCY,
     DEFAULT_PROJECT_UPDATE_FREQUENCY,
 )
@@ -32,7 +33,17 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             CONF_UPDATE_INTERVAL,
             config_data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
         )
-        
+
+        # Koolnova bans IPs polled more often than every 30s (issue #4):
+        # clamp intervals from configs created before this limit existed.
+        if update_interval_seconds < MIN_UPDATE_INTERVAL:
+            _LOGGER.warning(
+                "Configured update interval (%ss) is below Koolnova's rate limit; "
+                "clamping to %ss to avoid an IP ban",
+                update_interval_seconds, MIN_UPDATE_INTERVAL,
+            )
+            update_interval_seconds = MIN_UPDATE_INTERVAL
+
         super().__init__(
             hass,
             _LOGGER,
@@ -415,6 +426,15 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             CONF_UPDATE_INTERVAL,
             config_data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
         )
+
+        # Same clamp as in __init__: never poll faster than Koolnova allows
+        if new_interval_seconds < MIN_UPDATE_INTERVAL:
+            _LOGGER.warning(
+                "Configured update interval (%ss) is below Koolnova's rate limit; "
+                "clamping to %ss to avoid an IP ban",
+                new_interval_seconds, MIN_UPDATE_INTERVAL,
+            )
+            new_interval_seconds = MIN_UPDATE_INTERVAL
 
         new_interval = timedelta(seconds=new_interval_seconds)
 

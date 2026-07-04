@@ -2,24 +2,18 @@
 """Session manager for the Koolnova REST API in order to maintain authentication token between calls."""
 
 import logging
-import json
 import time
 from typing import Optional
-from urllib.parse import quote_plus
 
 from requests import Response
 from requests import Session
 
-#logging.basicConfig(level=logging.DEBUG)
-
+from .const import COMMON_HEADERS
+from .const import FULL_USER_AGENT
 from .const import KOOLNOVA_API_URL
 from .const import KOOLNOVA_AUTH_URL
 
 _LOGGER = logging.getLogger(__name__)
-
-# ============= CONSTANTE CENTRALIZADA USER-AGENT =============
-DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-# =============================================================
 
 class KoolnovaClientSession(Session):
     """HTTP session manager for Koolnova api.
@@ -40,27 +34,18 @@ class KoolnovaClientSession(Session):
         Session.__init__(self)
         _LOGGER.debug("Starting authentication for username '%s' (email: %s)", username, email)
 
-        # Build payload: prefer explicit email param; if not provided but username
-        # looks like an email address, send it as 'email' as well (matches web app)
-        if email:
-            payload = {"email": email, "password": password}
-        elif username and "@" in username:
-            payload = {"email": username, "password": password}
-        else:
-            payload = {"username": username or "", "password": password}
+        # Build payload. Since May 2026 the API expects the login under the
+        # 'username' field (an email address is accepted as value); sending it
+        # as 'email' returns 404 (see issue #4).
+        login = username or email or ""
+        payload = {"username": login, "password": password}
 
-        _LOGGER.debug("Auth payload: %s", payload)
+        _LOGGER.debug("Auth payload user: %s", login)
 
-        # Add headers similar to browser request (helps servers routing based on Origin/UA)
-        headers_token = {
-            "accept": "application/json, text/plain, */*",
-            "content-type": "application/json",
-            "accept-language": "fr",
-            "origin": "https://app.koolnova.com",
-            "referer": "https://app.koolnova.com/",
-            "cache-control": "no-cache",
-            "user-agent": DEFAULT_USER_AGENT,  # ← USAR CONSTANTE
-        }
+        # Browser-like headers: since May 2026 the API returns 404 without the
+        # sec-ch-ua / sec-fetch-* headers and a modern Chrome UA (issue #4).
+        headers_token = COMMON_HEADERS.copy()
+        headers_token["content-type"] = "application/json"
 
         # Improved retry logic with exponential backoff for rate limiting
         response = None
@@ -119,13 +104,12 @@ class KoolnovaClientSession(Session):
         if response is None:
             raise RuntimeError(f"Authentication request failed after {max_attempts} attempts (no response)")
 
-        # Log body for easier debugging when failing
+        # Read body for easier debugging when failing (do not log it on
+        # success: it contains the auth token)
         try:
             body = response.text
         except Exception:
             body = "<unable to read response body>"
-
-        _LOGGER.debug("Auth response body: %s", body)
 
         try:
             response.raise_for_status()
@@ -140,7 +124,7 @@ class KoolnovaClientSession(Session):
 
         self.bearerToken = str(token)
         self.token_created = time.time()  # Track when token was created
-        _LOGGER.debug("BearerToken of authentication : %s", self.bearerToken)
+        _LOGGER.debug("Authentication successful, token obtained")
 
     def rest_request(self, method: str, path: str, **kwargs) -> Response:
         """
@@ -157,7 +141,7 @@ class KoolnovaClientSession(Session):
         headers_auth = {
             "Authorization": "Bearer " + self.bearerToken,
             "Cache-Control": "no-cache",
-            "User-Agent": DEFAULT_USER_AGENT,  # ← AÑADIDO USER-AGENT AQUÍ
+            "User-Agent": FULL_USER_AGENT,
         }
         # Fusionner les headers passés en argument
         headers = kwargs.pop("headers", {})

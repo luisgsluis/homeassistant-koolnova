@@ -13,9 +13,11 @@ DOMAIN = "koolnova"
 PLATFORMS = ["climate"]
 
 # CONFIGURABLES: Valores por defecto y limites
-DEFAULT_UPDATE_INTERVAL = 10  # segundos
-MIN_UPDATE_INTERVAL = 5       # minimo configurable
-MAX_UPDATE_INTERVAL = 300     # maximo configurable
+# IMPORTANTE: Koolnova banea IPs automaticamente si se consulta la API mas de
+# una vez cada 30 segundos (confirmado por su soporte, ver issue #4).
+DEFAULT_UPDATE_INTERVAL = 30  # segundos
+MIN_UPDATE_INTERVAL = 30      # minimo configurable (limite impuesto por Koolnova)
+MAX_UPDATE_INTERVAL = 3600    # maximo configurable
 DEFAULT_PROJECT_UPDATE_FREQUENCY = 10  # cada cuantas actualizaciones se actualizan proyectos
 MIN_PROJECT_UPDATE_FREQUENCY = 1      # minimo configurable (siempre actualizar)
 MAX_PROJECT_UPDATE_FREQUENCY = 300    # maximo configurable

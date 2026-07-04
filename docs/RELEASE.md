@@ -32,6 +32,22 @@ La integración es compatible con HACS (Home Assistant Community Store):
 
 ## Changelog
 
+### v1.3.0
+- 🚨 **FIX (issue #4)**: Autenticación fallaba con 404 en `/auth/v2/login/`. Koolnova cambió su API
+  (mayo 2026): ahora exige User-Agent Chrome moderno, headers `sec-ch-ua`/`sec-fetch-*` y el login
+  en el campo `username` del payload (no `email`).
+- 🛡️ **Anti-ban**: Koolnova banea IPs automáticamente si se consulta más de 1 vez cada 30 s
+  (confirmado por su soporte). Intervalo por defecto y mínimo subidos a 30 s, con clamp en el
+  coordinator para configuraciones antiguas.
+- 🛡️ **Anti-ban**: cooldown de 5 min tras un fallo de login antes de reintentar (los logins
+  fallidos repetidos también provocan ban de IP).
+- 🔒 Ya no se registra en logs de debug el payload de login (contenía la contraseña) ni el token.
+- 🧹 Eliminado código muerto heredado del fork original (métodos de piscinas/hubs, ~110 líneas) y
+  dependencia implícita de `dateutil`; User-Agent unificado en una sola constante.
+- 🔧 **HACS**: corregido `hacs.json` (quitadas claves no admitidas que hacían fallar el check
+  `hacsjson`); el workflow de validación ahora pasa (`brands` se ignora por ser repo custom).
+- Los modos HVAC por defecto **no cambian**.
+
 ### v1.2.6
 - 🔒 **Seguridad**: Eliminado `tests/` del repositorio y purgado del historial de git (contenía
   scripts de exploración de API con credenciales en texto plano). Historial de commits reescrito.
@@ -78,23 +94,25 @@ ROOT_REPOSITORIO/
 └── hacs.json              ← Configuración HACS en la raíz
 ```
 
-### 🔧 Configuración HACS Requerida (`hacs.json`)
+### 🔧 Configuración HACS (`hacs.json`)
+
+`hacs.json` solo admite un conjunto reducido de claves. Metadatos como `domain`, `config_flow`,
+`iot_class`, `categories` o `repository` van en `manifest.json`, **no aquí** — si se ponen en
+`hacs.json`, el check `hacsjson` del workflow falla con "extra keys not allowed".
 
 ```json
 {
-  "name": "Nombre de la integración",
-  "homeassistant": "versión mínima compatible",
-  "domain": "dominio_exacto",      // DEBE coincidir con manifest.json
-  "repository": "URL_completa_github",
-  "config_flow": true/false,
-  "iot_class": "clase_iot",
-  "categories": ["Categoría"]
+  "name": "Koolnova",
+  "homeassistant": "2025.12.0",
+  "render_readme": true,
+  "country": ["ES"],
+  "hide_default_branch": false
 }
 ```
 
-**❌ NO usar**:
-- `"zip_release": true` (HACS usa archivos estándar de GitHub)
-- `"filename": "custom.zip"` (No se permiten ZIPs personalizados)
+**❌ NO usar en `hacs.json`**:
+- `domain`, `config_flow`, `iot_class`, `categories`, `repository` (van en `manifest.json`)
+- `zip_release` / `filename` (HACS usa archivos estándar de GitHub, no ZIPs personalizados)
 
 ### Pasos para Release HACS Compatible
 
@@ -102,7 +120,6 @@ ROOT_REPOSITORIO/
 2. **Testing**: Verificar funcionamiento en HA
 3. **Actualización de JSON**:
    - `manifest.json`: Actualizar `"version"` para que coincida con el tag
-   - `hacs.json`: Verificar que `"domain"` coincida con `manifest.json`
 4. **Commit**: `git commit -m "Release vX.Y.Z"`
 5. **Tag**: `git tag -a vX.Y.Z -m "Release vX.Y.Z"`
 6. **Push**: `git push origin main --tags`
@@ -114,7 +131,7 @@ ROOT_REPOSITORIO/
 - **Estructura**: GitHub estándar (`repositorio-versión/custom_components/dominio/...`)
 - **Archivos obligatorios**:
   - `custom_components/koolnova/manifest.json` (con versión correcta)
-  - `hacs.json` (en raíz, con dominio correcto)
+  - `hacs.json` (en raíz, solo con las claves admitidas)
   - `README.md` (en raíz)
 - **Versiones**: El tag y `manifest.json` DEBEN coincidir exactamente
 - **Releases**: Crear releases estándar de GitHub (sin assets personalizados)
