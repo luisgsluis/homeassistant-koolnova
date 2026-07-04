@@ -10,6 +10,13 @@ on:
 jobs:
   claude:
     runs-on: ubuntu-latest
+    # Required by claude-code-action: id-token for OIDC auth, plus read/write
+    # access to the contents/issues/PRs it acts on.
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
       - uses: anthropics/claude-code-action@v1
         with:
