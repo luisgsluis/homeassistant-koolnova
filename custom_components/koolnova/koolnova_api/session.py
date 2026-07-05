@@ -34,11 +34,13 @@ class KoolnovaClientSession(Session):
         Session.__init__(self)
         _LOGGER.debug("Starting authentication for username '%s' (email: %s)", username, email)
 
-        # Build payload. Since May 2026 the API expects the login under the
-        # 'username' field (an email address is accepted as value); sending it
-        # as 'email' returns 404 (see issue #4).
-        login = username or email or ""
-        payload = {"username": login, "password": password}
+        # Build payload. The API authenticates under the 'email' field
+        # (verified against api.koolnova.com/auth/v2/login/: 'email' -> 200,
+        # 'username' -> 400 "Unable to log in with provided credentials").
+        # The 404 in issue #4 was caused by the missing browser headers below,
+        # not by the field name; sending 'username' regressed login (see v1.3.0).
+        login = email or username or ""
+        payload = {"email": login, "password": password}
 
         _LOGGER.debug("Auth payload user: %s", login)
 
