@@ -5,6 +5,16 @@ Every published version of the integration. The format follows
 [SemVer](https://semver.org/): the git tag and the `"version"` field in `manifest.json` are always
 identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
+## [Unreleased]
+
+### Added
+
+- **Per-zone humidity sensors.** `GET /topics/sensors/` now returns a `humidity` field (relative
+  humidity, %) for each zone. Every zone that reports a value gets a
+  `sensor.koolnova_<room>_humidity` entity (device class `humidity`, state class `measurement`).
+  Zones that return `null` get no entity. No extra API calls: the value comes from the sensors
+  request the integration already makes. See [docs/API.md](docs/API.md).
+
 ## [2.0.3] — 2026-08-18
 
 ### Added
