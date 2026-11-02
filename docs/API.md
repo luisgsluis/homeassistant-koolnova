@@ -92,13 +92,18 @@ Fields seen on each zone as of November 2026:
 | Field | Meaning |
 |---|---|
 | `humidity` | Relative humidity in %, e.g. `54.0`. `null` when the zone has no humidity probe |
-| `co2` | CO₂ reading; `null` on zones without a CO₂ probe (not consumed yet) |
+| `co2` | CO₂ reading in ppm; `null` on zones without a CO₂ probe |
 | `room` / `floor` | `{id, name}` grouping (not consumed) |
 | `control_unit`, `zone` | Control unit number and zone index, as shown in the webapp (`uc: 31 / zone: 04`) |
 | `is_trv`, `is_removed`, `image` | Not consumed |
 
 `topic_info.humidity` is a **different, project-level boolean** (it reads `false` on accounts whose
 zones do report humidity), so don't use it to decide whether a zone has a humidity reading.
+
+On legacy accounts (`topic_info.is_v2: false`, a central control unit with a wall panel) every zone
+returns `humidity: null` and `co2: null` in `/topics/sensors/`, `/devices/` and `/topics/`, even if
+the physical panel shows a humidity value: the cloud never receives it, so the integration has
+nothing to expose.
 
 ### `PUT /topics/sensors/{sensor_id}/`
 

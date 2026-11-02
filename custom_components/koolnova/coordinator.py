@@ -128,6 +128,7 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
                     "Room_actual_temp": sensor_data.get("temperature"),
                     "Room_setpoint_temp": sensor_data.get("setpoint_temperature"),
                     "Room_humidity": sensor_data.get("humidity"),
+                    "Room_co2": sensor_data.get("co2"),
                     "Room_speed": sensor_data.get("speed"),
                     "Topic_id": topic_id,
                     "topic_info": topic_info,
@@ -397,10 +398,11 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
                         "Topic_id": updated_sensor_data.get("topic_info", {}).get("id") if updated_sensor_data.get("topic_info") else None,
                         "Room_update_at": updated_sensor_data.get("updated_at"),
                     })
-                    # Only overwrite humidity when the PUT response carries it,
-                    # so the sensor doesn't blank out between polls
-                    if "humidity" in updated_sensor_data:
-                        self.data["sensors"][i]["Room_humidity"] = updated_sensor_data["humidity"]
+                    # Only overwrite humidity/CO2 when the PUT response carries them,
+                    # so the sensors don't blank out between polls
+                    for api_key, cache_key in (("humidity", "Room_humidity"), ("co2", "Room_co2")):
+                        if api_key in updated_sensor_data:
+                            self.data["sensors"][i][cache_key] = updated_sensor_data[api_key]
                     _LOGGER.debug("Updated sensor %s in local cache using API response", sensor_id)
                     return True
         return False

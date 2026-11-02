@@ -12,6 +12,7 @@ custom_components/koolnova/
 ├── const.py           DOMAIN, limits, Koolnova code <-> HA mode mappings
 ├── coordinator.py     DataUpdateCoordinator: does the polling
 ├── climate.py         entities: project (global) and zone (per room)
+├── sensor.py          per-zone humidity and CO2 sensors (created when a zone starts reporting)
 ├── manifest.json      version must match the git tag
 ├── brand/             icon and logo served by HA (see its README)
 └── koolnova_api/      vendored REST client
@@ -88,8 +89,18 @@ paths over a real socket. It still never touches api.koolnova.com, so no credent
 **Never put real credentials in a test.** An earlier `tests/` directory held API exploration
 scripts with a plaintext password and had to be purged from git history in v1.2.6.
 
-The Home Assistant side (`climate.py`, `coordinator.py`, `config_flow.py`) is not covered: it needs
-a live Home Assistant instance and a real Koolnova account to mean anything.
+`tests/test_sensor.py` covers the sensor platform (entity creation, late-reporting zones, availability)
+and the coordinator cache with a fake coordinator, but it needs Home Assistant itself, so it skips
+where HA isn't installed (including CI). Run it inside the HA container, as a separate process:
+
+```bash
+docker exec homeassistant rm -rf /tmp/kr && docker exec homeassistant mkdir /tmp/kr
+docker cp tests homeassistant:/tmp/kr/tests && docker cp custom_components homeassistant:/tmp/kr/custom_components
+docker exec -w /tmp/kr homeassistant python -m unittest tests.test_sensor -v
+```
+
+The rest of the HA side (`climate.py`, `config_flow.py`) is not covered: it needs a live Home
+Assistant instance and a real Koolnova account to mean anything.
 
 ## Test environment
 

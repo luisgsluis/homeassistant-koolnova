@@ -183,6 +183,8 @@ class KoolnovaAPIRestClient:
                 "Room_setpoint_temp": room["setpoint_temperature"],
                 # Relative humidity (%); absent or None on zones without a probe
                 "Room_humidity": room.get("humidity"),
+                # CO2 in ppm; same rule as humidity
+                "Room_co2": room.get("co2"),
                 "Room_speed": room["speed"],
                 "Topic_id": topic_id,
                 "topic_info": topic_info  # full connectivity information

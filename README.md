@@ -22,7 +22,8 @@ Requires Home Assistant 2025.12.0 or newer and a Koolnova app account.
 - 🧊 **Hub control** on legacy accounts: one `climate` entity per hub with ON/OFF and the behavior
   mode (manual / auto / planning)
 - 📶 **Connectivity binary sensor** per project (online/offline)
-- 💧 **Per-zone humidity**: a `sensor` per room that reports one (`sensor.koolnova_<room>_humidity`)
+- 💧 **Per-zone humidity and CO₂**: a `sensor` per room that reports one
+  (`sensor.koolnova_<room>_humidity`, `sensor.koolnova_<room>_co2`)
 - 🔌 **Per-zone on/off**: a `switch` per room (`switch.koolnova_<room>_power`) toggles the zone
   straight from the dashboard; zone `climate` modes display as **On/Off** instead of Auto/Off (the
   codes sent to the API are unchanged)
@@ -41,7 +42,8 @@ Requires Home Assistant 2025.12.0 or newer and a Koolnova app account.
 | `climate.koolnova_*` (zone) | climate | One per room: temperature, setpoint, HVAC mode, fan speed |
 | `climate.koolnova_hub_*` | climate | Legacy hub, one per hub: ON/OFF + manual / auto / planning |
 | `switch.koolnova_<room>_power` | switch | One per room: power on/off toggle |
-| `sensor.koolnova_<room>_humidity` | sensor | One per room with a humidity probe: relative humidity (%) |
+| `sensor.koolnova_<room>_humidity` | sensor | One per room that reports humidity: relative humidity (%) |
+| `sensor.koolnova_<room>_co2` | sensor | One per room that reports CO₂ (ppm) |
 | `sensor.koolnova_connectivity_status` | sensor | Online/offline + WiFi signal, last sync, per-room last update |
 | `binary_sensor.koolnova_connectivity_status` | binary_sensor | Online/offline per project, ready for automations |
 
