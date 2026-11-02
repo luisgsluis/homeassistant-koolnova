@@ -84,8 +84,21 @@ From each item in `data[]` the client uses `name` and, inside `topic`: `id`, `na
 ### `GET /topics/sensors/`
 
 List of sensors (zones). From each item in `data[]` the client uses `id`, `name`, `status`,
-`temperature`, `setpoint_temperature`, `speed`, `updated_at` and the `topic_info` block (which
-provides the topic `id` and the connectivity data: RSSI, online, sync).
+`temperature`, `setpoint_temperature`, `humidity`, `speed`, `updated_at` and the `topic_info` block
+(which provides the topic `id` and the connectivity data: RSSI, online, sync).
+
+Fields seen on each zone as of November 2026:
+
+| Field | Meaning |
+|---|---|
+| `humidity` | Relative humidity in %, e.g. `54.0`. `null` when the zone has no humidity probe |
+| `co2` | CO₂ reading; `null` on zones without a CO₂ probe (not consumed yet) |
+| `room` / `floor` | `{id, name}` grouping (not consumed) |
+| `control_unit`, `zone` | Control unit number and zone index, as shown in the webapp (`uc: 31 / zone: 04`) |
+| `is_trv`, `is_removed`, `image` | Not consumed |
+
+`topic_info.humidity` is a **different, project-level boolean** (it reads `false` on accounts whose
+zones do report humidity), so don't use it to decide whether a zone has a humidity reading.
 
 ### `PUT /topics/sensors/{sensor_id}/`
 

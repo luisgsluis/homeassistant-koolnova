@@ -34,6 +34,7 @@ SENSORS_PAYLOAD = {
             "updated_at": "2026-07-01T10:00:00Z",
             "temperature": 23.4,
             "setpoint_temperature": 22.0,
+            "humidity": 54.0,
             "speed": "2",
             "topic_info": {"id": 42, "rssi": -60, "is_online": True},
         }
@@ -127,6 +128,7 @@ class GetSensorsTest(ClientTestCase):
         self.assertEqual(rooms[0]["Room_id"], 7)
         self.assertEqual(rooms[0]["Room_actual_temp"], 23.4)
         self.assertEqual(rooms[0]["Room_setpoint_temp"], 22.0)
+        self.assertEqual(rooms[0]["Room_humidity"], 54.0)
         self.assertEqual(rooms[0]["Topic_id"], 42)
         self.assertEqual(rooms[0]["topic_info"]["rssi"], -60)
 
@@ -139,6 +141,17 @@ class GetSensorsTest(ClientTestCase):
 
         self.assertEqual(rooms[0]["Topic_id"], "Unknown")
         self.assertEqual(rooms[0]["topic_info"], {})
+
+    def test_humidity_is_none_when_the_zone_has_no_probe(self):
+        with_null = dict(SENSORS_PAYLOAD["data"][0], humidity=None)
+        without_key = dict(SENSORS_PAYLOAD["data"][0])
+        del without_key["humidity"]
+        self._respond({"data": [with_null, without_key]})
+
+        rooms = self.client.get_sensors()
+
+        self.assertIsNone(rooms[0]["Room_humidity"])
+        self.assertIsNone(rooms[1]["Room_humidity"])
 
     def test_raises_when_there_are_no_sensors(self):
         self._respond({"data": []})
