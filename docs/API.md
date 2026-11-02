@@ -100,11 +100,6 @@ Fields seen on each zone as of November 2026:
 `topic_info.humidity` is a **different, project-level boolean** (it reads `false` on accounts whose
 zones do report humidity), so don't use it to decide whether a zone has a humidity reading.
 
-On legacy accounts (`topic_info.is_v2: false`, a central control unit with a wall panel) every zone
-returns `humidity: null` and `co2: null` in `/topics/sensors/`, `/devices/` and `/topics/`, even if
-the physical panel shows a humidity value: the cloud never receives it, so the integration has
-nothing to expose.
-
 ### `PUT /topics/sensors/{sensor_id}/`
 
 Updates one zone. **It is `PUT`, not `PATCH`** — unlike the topics endpoint.
