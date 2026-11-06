@@ -168,6 +168,10 @@ class KoolnovaAPIRestClient:
         for room in json_resp["data"]:
             _LOGGER.debug("Room Name : %s", room["name"])
             _LOGGER.debug("Room Room_actual_temp : %s", room["temperature"])
+            _LOGGER.debug(
+                "Room %s raw humidity: %r, co2: %r",
+                room["name"], room.get("humidity"), room.get("co2"),
+            )
             _LOGGER.debug("Topic Info : %s", room.get("topic_info", {}))
             # Get the id out of topic_info
             # Keep the whole topic_info block: it carries RSSI, online and sync
