@@ -5,6 +5,18 @@ Every published version of the integration. The format follows
 [SemVer](https://semver.org/): the git tag and the `"version"` field in `manifest.json` are always
 identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
+## [2.1.1] — 2026-11-09
+
+### Fixed
+
+- **Deprecated climate properties renamed for Home Assistant 2026.11.** The project and zone
+  entities implemented `current_temperature`/`target_temperature` and set
+  `_attr_temperature_unit`, which Home Assistant deprecated in favour of
+  `native_current_temperature`/`native_target_temperature` and
+  `_attr_native_temperature_unit`. Home Assistant logged a warning for each entity on every start
+  and will remove the old names in 2027.11. Behaviour is unchanged: the integration reports
+  temperatures in Celsius either way.
+
 ## [2.1.0] — 2026-11-02
 
 ### Added

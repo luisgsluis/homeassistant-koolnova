@@ -87,7 +87,7 @@ class KoolnovaProjectEntity(ClimateEntity):
             ClimateEntityFeature.TURN_ON |
             ClimateEntityFeature.TURN_OFF
         )
-        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
+        self._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_should_poll = False
 
         self._global_fan_mode = FAN_AUTO
@@ -205,7 +205,7 @@ class KoolnovaProjectEntity(ClimateEntity):
         return KOOLNOVA_TO_HVAC_MODE.get(self._project["Mode"], HVACMode.OFF)
 
     @property
-    def target_temperature(self):
+    def native_target_temperature(self):
         """Return median of zones' target temperatures."""
         sensors = self.coordinator.data.get("sensors", [])
         if not sensors:
@@ -222,7 +222,7 @@ class KoolnovaProjectEntity(ClimateEntity):
         return None
 
     @property
-    def current_temperature(self):
+    def native_current_temperature(self):
         """Return average temperature of all zones, rounded to nearest 0.5."""
         sensors = self.coordinator.data.get("sensors", [])
         if not sensors:
@@ -494,7 +494,7 @@ class KoolnovaZoneEntity(ClimateEntity):
             ClimateEntityFeature.TURN_ON |
             ClimateEntityFeature.TURN_OFF
         )
-        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
+        self._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_should_poll = False
 
     def _get_config_value(self, key, default):
@@ -566,13 +566,13 @@ class KoolnovaZoneEntity(ClimateEntity):
         return current_mode
 
     @property
-    def current_temperature(self):
+    def native_current_temperature(self):
         """Return current temperature."""
         self._update_sensor_data()
         return self._sensor.get("Room_actual_temp")
 
     @property
-    def target_temperature(self):
+    def native_target_temperature(self):
         """Return target temperature."""
         self._update_sensor_data()
         return self._sensor.get("Room_setpoint_temp")
@@ -787,7 +787,7 @@ class KoolnovaHubEntity(ClimateEntity):
 
     _attr_translation_key = "koolnova_hub"
     _attr_should_poll = False
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_hvac_modes = [HVACMode.AUTO, HVACMode.OFF]
 
     def __init__(self, coordinator, config_entry, hub):
