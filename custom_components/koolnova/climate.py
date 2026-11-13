@@ -21,6 +21,7 @@ from homeassistant.components.climate import (
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.const import UnitOfTemperature
 from homeassistant.components.persistent_notification import async_create
+from homeassistant.exceptions import HomeAssistantError
 
 from .const import (
     DOMAIN,
@@ -44,6 +45,26 @@ from .const import (
 from .coordinator import KoolnovaDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _fallo(hass, titulo: str, mensaje: str, err: Exception) -> None:
+    """Notificación persistente y error al llamador: una automatización o la UI tienen que enterarse de que no
+    se aplicó (antes se tragaba y el servicio parecía haber ido bien)."""
+    _LOGGER.error("%s: %s", mensaje, err)
+    async_create(hass, f"{mensaje}: {err}", title=titulo)
+    raise HomeAssistantError(f"{mensaje}: {err}") from err
+
+
+def _resultado_global(hass, titulo: str, que: str, result: dict) -> None:
+    """Resultado de un cambio aplicado a todas las zonas: aviso si alguna falló, error si fallaron todas."""
+    ok, mal = result.get("updated", 0), result.get("failed", 0)
+    if not mal:
+        _LOGGER.info("%s: %d zonas", que, ok)
+        return
+    texto = f"{que}: {ok} zonas bien, {mal} con error"
+    async_create(hass, texto, title=titulo)
+    if not ok:
+        raise HomeAssistantError(texto)
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Koolnova climate entities."""
@@ -322,10 +343,7 @@ class KoolnovaProjectEntity(ClimateEntity):
             await self.coordinator.async_update_project_data(self._project["Topic_id"], body)
             _LOGGER.info("Project mode updated to %s", hvac_mode)
         except Exception as err:
-            _LOGGER.error("Error updating project mode: %s", err)
-            async_create(
-                self.hass, f"Error updating project mode: {err}", title="Koolnova Project Mode"
-            )
+            _fallo(self.hass, "Koolnova Project Mode", "Error updating project mode", err)
 
     async def async_set_fan_mode(self, fan_mode):
         """Set global fan mode for ALL zones."""
@@ -338,25 +356,15 @@ class KoolnovaProjectEntity(ClimateEntity):
             _LOGGER.error("Fan mode not mapped: %s", fan_mode)
             return
 
-        self._global_fan_mode = fan_mode
-        self.async_write_ha_state()
-        
         _LOGGER.info("Setting global fan mode to %s (speed: %s) for all zones", fan_mode, speed_code)
-
         try:
             result = await self.coordinator.async_update_all_sensors_fan_speed(speed_code)
-            if result.get("failed", 0) > 0:
-                async_create(
-                    self.hass,
-                    f"Global fan mode update completed with some failures: "
-                    f"{result.get('updated', 0)} successful, {result.get('failed', 0)} failed",
-                    title="Koolnova Global Fan Control",
-                )
-            else:
-                _LOGGER.info("Global fan mode successfully updated to %s for all %d zones", fan_mode, result.get("updated", 0))
         except Exception as err:
-            _LOGGER.error("Error setting global fan mode: %s", err)
-            async_create(self.hass, f"Error setting global fan mode: {err}", title="Koolnova Global Fan Control")
+            _fallo(self.hass, "Koolnova Global Fan Control", "Error setting global fan mode", err)
+        if result.get("updated", 0):      # el modo mostrado solo cambia si alguna zona lo aceptó
+            self._global_fan_mode = fan_mode
+            self.async_write_ha_state()
+        _resultado_global(self.hass, "Koolnova Global Fan Control", f"Global fan mode {fan_mode}", result)
 
     async def async_set_preset_mode(self, preset_mode: str):
         """Set global zone HVAC mode for ALL zones."""
@@ -375,26 +383,19 @@ class KoolnovaProjectEntity(ClimateEntity):
             _LOGGER.error("Zone HVAC mode not mapped: %s", hvac_mode)
             return
 
-        self._global_zone_hvac_mode = hvac_mode
-        self.async_write_ha_state()
-
         _LOGGER.info("Setting global zone HVAC mode to %s (status: %s) for all zones", hvac_mode, status_code)
+        await self._set_all_zones_status(hvac_mode, status_code, f"Global zone HVAC mode {preset_mode}")
 
+    async def _set_all_zones_status(self, hvac_mode, status_code, que):
+        """Mismo estado en todas las zonas; el modo global mostrado solo cambia si alguna lo aceptó."""
         try:
             result = await self.coordinator.async_update_all_sensors_status(status_code)
-            if result.get("failed", 0) > 0:
-                async_create(
-                    self.hass,
-                    f"Global zone HVAC mode update completed with some failures: "
-                    f"{result.get('updated', 0)} successful, {result.get('failed', 0)} failed",
-                    title="Koolnova Global Zone Control",
-                )
-            else:
-                _LOGGER.info("Global zone HVAC mode successfully updated to %s for all %d zones", preset_mode, result.get("updated", 0))
         except Exception as err:
-            _LOGGER.error("Error setting global zone HVAC mode: %s", err)
-            async_create(self.hass, f"Error setting global zone HVAC mode: {err}", title="Koolnova Global Zone Control")
-
+            _fallo(self.hass, "Koolnova Global Zone Control", f"Error: {que}", err)
+        if result.get("updated", 0):
+            self._global_zone_hvac_mode = hvac_mode
+            self.async_write_ha_state()
+        _resultado_global(self.hass, "Koolnova Global Zone Control", que, result)
 
     async def async_set_temperature(self, **kwargs):
         """Set global target temperature for ALL zones."""
@@ -410,21 +411,11 @@ class KoolnovaProjectEntity(ClimateEntity):
             return
 
         _LOGGER.info("Setting global temperature to %s degrees for all zones", temp)
-
         try:
             result = await self.coordinator.async_update_all_sensors_temperature(temp)
-            if result.get("failed", 0) > 0:
-                async_create(
-                    self.hass,
-                    f"Global temperature update completed with some failures: "
-                    f"{result.get('updated', 0)} successful, {result.get('failed', 0)} failed",
-                    title="Koolnova Global Temperature",
-                )
-            else:
-                _LOGGER.info("Global temperature successfully updated to %s degrees for all %d zones", temp, result.get("updated", 0))
         except Exception as err:
-            _LOGGER.error("Error setting global temperature: %s", err)
-            async_create(self.hass, f"Error setting global temperature: {err}", title="Koolnova Global Temperature")
+            _fallo(self.hass, "Koolnova Global Temperature", "Error setting global temperature", err)
+        _resultado_global(self.hass, "Koolnova Global Temperature", f"Global temperature {temp}", result)
 
     async def async_turn_on(self):
         """Turn the project on: push AUTO to every zone, regardless of the configured
@@ -434,45 +425,13 @@ class KoolnovaProjectEntity(ClimateEntity):
         don't drive the hardware (confirmed live): the actual global on/off is
         per-zone status, same mechanism as `async_set_preset_mode` below.
         """
-        status_code = HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.AUTO]
-        self._global_zone_hvac_mode = HVACMode.AUTO
-        self.async_write_ha_state()
-
         _LOGGER.info("Turning project on: setting all zones to auto")
-
-        try:
-            result = await self.coordinator.async_update_all_sensors_status(status_code)
-            if result.get("failed", 0) > 0:
-                async_create(
-                    self.hass,
-                    f"Turning project on completed with some failures: "
-                    f"{result.get('updated', 0)} successful, {result.get('failed', 0)} failed",
-                    title="Koolnova Global Zone Control",
-                )
-        except Exception as err:
-            _LOGGER.error("Error turning on project: %s", err)
-            async_create(self.hass, f"Error turning on project: {err}", title="Koolnova Global Zone Control")
+        await self._set_all_zones_status(HVACMode.AUTO, HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.AUTO], "Turning project on")
 
     async def async_turn_off(self):
         """Turn the project off: push OFF to every zone (see async_turn_on)."""
-        status_code = HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.OFF]
-        self._global_zone_hvac_mode = HVACMode.OFF
-        self.async_write_ha_state()
-
         _LOGGER.info("Turning project off: setting all zones to off")
-
-        try:
-            result = await self.coordinator.async_update_all_sensors_status(status_code)
-            if result.get("failed", 0) > 0:
-                async_create(
-                    self.hass,
-                    f"Turning project off completed with some failures: "
-                    f"{result.get('updated', 0)} successful, {result.get('failed', 0)} failed",
-                    title="Koolnova Global Zone Control",
-                )
-        except Exception as err:
-            _LOGGER.error("Error turning off project: %s", err)
-            async_create(self.hass, f"Error turning off project: {err}", title="Koolnova Global Zone Control")
+        await self._set_all_zones_status(HVACMode.OFF, HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.OFF], "Turning project off")
 
 class KoolnovaZoneEntity(ClimateEntity):
     """Individual room zone as a climate device."""
@@ -640,11 +599,13 @@ class KoolnovaZoneEntity(ClimateEntity):
             await self.coordinator.async_update_sensor_data(self._sensor_id, body)
             _LOGGER.info("Temperature successfully updated for %s", self._attr_name)
         except Exception as err:
-            _LOGGER.error("Error updating zone temperature for %s: %s", self._attr_name, err)
-            async_create(self.hass, f"Error updating zone temperature: {err}", title="Koolnova")
+            _fallo(self.hass, "Koolnova", f"Error updating zone temperature for {self._attr_name}", err)
 
     async def async_set_fan_mode(self, fan_mode):
         """Set fan mode."""
+        if fan_mode not in self.fan_modes:
+            _LOGGER.error("Unsupported fan mode: %s. Available: %s", fan_mode, self.fan_modes)
+            return
         koolnova_speed = FAN_TO_KOOLNOVA.get(fan_mode)
         if not koolnova_speed:
             _LOGGER.error("Unsupported fan mode: %s. Available: %s", fan_mode, self.fan_modes)
@@ -657,8 +618,7 @@ class KoolnovaZoneEntity(ClimateEntity):
             await self.coordinator.async_update_sensor_data(self._sensor_id, body)
             _LOGGER.info("Fan mode successfully updated for %s", self._attr_name)
         except Exception as err:
-            _LOGGER.error("Error updating zone fan mode for %s: %s", self._attr_name, err)
-            async_create(self.hass, f"Error updating zone fan mode: {err}", title="Koolnova")
+            _fallo(self.hass, "Koolnova", f"Error updating zone fan mode for {self._attr_name}", err)
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set HVAC mode for zones - only configured modes allowed."""
@@ -678,8 +638,7 @@ class KoolnovaZoneEntity(ClimateEntity):
             await self.coordinator.async_update_sensor_data(self._sensor_id, body)
             _LOGGER.info("HVAC mode successfully updated for %s", self._attr_name)
         except Exception as err:
-            _LOGGER.error("Error updating zone HVAC mode for %s: %s", self._attr_name, err)
-            async_create(self.hass, f"Error updating zone HVAC mode: {err}", title="Koolnova")
+            _fallo(self.hass, "Koolnova", f"Error updating zone HVAC mode for {self._attr_name}", err)
 
     async def async_turn_on(self):
         """Turn the zone on (AUTO, or the first configured non-off mode)."""
@@ -846,7 +805,7 @@ class KoolnovaHubEntity(ClimateEntity):
             self._hub.update({"State": result.get("state"), "Mode": result.get("mode")})
             self.async_write_ha_state()
         except Exception as err:
-            _LOGGER.error("Error setting hub state: %s", err)
+            _fallo(self.hass, "Koolnova Hub", f"Error setting hub {self._hub_id} state", err)
 
     async def async_set_preset_mode(self, preset_mode):
         """Set the hub behavior mode (manual / auto / planning)."""
@@ -857,7 +816,7 @@ class KoolnovaHubEntity(ClimateEntity):
             self._hub.update({"State": result.get("state"), "Mode": result.get("mode")})
             self.async_write_ha_state()
         except Exception as err:
-            _LOGGER.error("Error setting hub mode: %s", err)
+            _fallo(self.hass, "Koolnova Hub", f"Error setting hub {self._hub_id} mode", err)
 
     async def async_turn_on(self):
         """Turn the hub on."""

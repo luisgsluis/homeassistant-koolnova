@@ -5,6 +5,22 @@ Every published version of the integration. The format follows
 [SemVer](https://semver.org/): the git tag and the `"version"` field in `manifest.json` are always
 identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
+## [2.1.2] — 2026-11-13
+
+### Fixed
+
+- **Failed commands are reported to Home Assistant.** Setting a temperature, fan speed or mode
+  (zone, global or hub) that the API rejected only logged the error and showed a notification:
+  the service call looked successful, so scripts and automations carried on as if it had worked.
+  It now raises an error that Home Assistant shows in the UI and that stops the automation.
+- **Global fan speed and zone mode only change when a zone accepted it.** The project entity
+  showed the new value before the API call and kept it when every zone failed.
+- **A persistent 401 no longer logs in over and over.** On a 401 the session renewed the token and,
+  if the API kept answering 401, renewed it again on every retry (with its own retries on 429), so
+  one request could trigger up to fifteen logins — the pattern that gets an IP rate-limited. It now
+  renews once per request.
+- Zone fan modes are validated before being sent, like the project's.
+
 ## [2.1.1] — 2026-11-09
 
 ### Fixed

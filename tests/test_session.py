@@ -238,6 +238,20 @@ class TokenRefreshTest(unittest.TestCase):
         _, kwargs = request.call_args_list[2]
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer tok")
 
+    def test_persistent_401_logs_in_only_once(self):
+        # GET -> 401, login -> 200, GET -> 401 again: the token is not the problem, so no second
+        # login (each one counts against the API's login rate limit that leads to a ban).
+        with patch(
+            "requests.Session.request",
+            side_effect=[_status_response(401), _ok_response(), _status_response(401)],
+        ) as request:
+            with self.assertRaises(HTTPError):
+                self.session.rest_request("GET", "projects/")
+
+        logins = [c for c in request.call_args_list if c.args[0] == "POST"]
+        self.assertEqual(len(logins), 1)
+        self.assertEqual(request.call_count, 3)
+
     def test_refresh_token_replaces_the_bearer_token(self):
         with patch("requests.Session.request", return_value=_ok_response({"access_token": "newtok"})):
             self.session.refresh_token()

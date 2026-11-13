@@ -218,6 +218,7 @@ class KoolnovaClientSession(Session):
         headers_auth.update(headers)
 
         url = f"{self.host}/{path}"
+        refreshed = False  # un solo re-login por petición: si el token nuevo también da 401, no es el token
 
         for attempt in range(retries + 1):
             try:
@@ -235,7 +236,8 @@ class KoolnovaClientSession(Session):
                 raise
 
             # 401: token expired/invalid -> refresh once and retry
-            if response.status_code == 401 and attempt < retries:
+            if response.status_code == 401 and attempt < retries and not refreshed:
+                refreshed = True
                 _LOGGER.warning(
                     "Received 401 on %s %s (attempt %d/%d); refreshing token",
                     method, url, attempt + 1, retries + 1,
