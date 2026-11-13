@@ -18,7 +18,8 @@ identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 - **A persistent 401 no longer logs in over and over.** On a 401 the session renewed the token and,
   if the API kept answering 401, renewed it again on every retry (with its own retries on 429), so
   one request could trigger up to fifteen logins — the pattern that gets an IP rate-limited. It now
-  renews once per request.
+  renews once per request: five login attempts at most (`AUTH_MAX_ATTEMPTS`), and a single one when
+  the API rejects the credentials.
 - Zone fan modes are validated before being sent, like the project's.
 
 ## [2.1.1] — 2026-11-09

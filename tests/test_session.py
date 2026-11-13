@@ -252,6 +252,18 @@ class TokenRefreshTest(unittest.TestCase):
         self.assertEqual(len(logins), 1)
         self.assertEqual(request.call_count, 3)
 
+    def test_logins_per_request_capped_at_five(self):
+        # GET -> 401, then the login keeps answering 429: 5 login attempts in total, never 15.
+        with patch(
+            "requests.Session.request",
+            side_effect=[_status_response(401)] + [_status_response(429)] * 20,
+        ) as request:
+            with self.assertRaises(Exception):
+                self.session.rest_request("GET", "projects/")
+
+        logins = [c for c in request.call_args_list if c.args[0] == "POST"]
+        self.assertEqual(len(logins), 5)
+
     def test_refresh_token_replaces_the_bearer_token(self):
         with patch("requests.Session.request", return_value=_ok_response({"access_token": "newtok"})):
             self.session.refresh_token()

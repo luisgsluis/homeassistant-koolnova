@@ -22,6 +22,10 @@ DEFAULT_MAX_RETRIES = 3      # retries after the initial attempt
 DEFAULT_RETRY_BACKOFF = 1.0  # base delay in seconds, doubles each attempt
 DEFAULT_RETRY_MAX_DELAY = 30.0
 
+# Login attempts per request, at most: rest_request renews the token once (on a 401) and that login
+# retries only network errors, 429 and 5xx. Koolnova bans IPs that log in too often.
+AUTH_MAX_ATTEMPTS = 5
+
 # Per-request timeout. Without one, a hung request blocks a polling cycle forever.
 # 45s is the value recommended by Koolnova support.
 REQUEST_TIMEOUT = 45
@@ -91,7 +95,7 @@ class KoolnovaClientSession(Session):
 
         # Improved retry logic with exponential backoff for rate limiting
         response = None
-        max_attempts = 5
+        max_attempts = AUTH_MAX_ATTEMPTS
         base_delay = 2.0  # Start with 2 seconds
         max_delay = 60.0  # Cap at 60 seconds
 
