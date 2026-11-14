@@ -11,15 +11,15 @@ Base: `https://api.koolnova.com` (Django REST framework).
 
 ## Rules that break everything when ignored
 
-1. **Browser-like headers on every request.** Since May 2026 the API answers `404` (not `401`, not
+1. **Browser-like headers on every request.** The API answers `404` (not `401`, not
    `403`) to requests without them, which makes it look like the endpoint is gone. See
    `COMMON_HEADERS` in `koolnova_api/const.py`.
 2. **Trailing slash on every path.** `projects/` yes, `projects` no.
 3. **At most one request every 30 s.** Koolnova bans your IP automatically above that rate, and
-   also on repeated failed logins.
-4. **45 s request timeout.** Koolnova support recommends a 45 s per-request timeout (the integration
-   default, configurable via `request_timeout` in the options flow). A hung request without a
-   timeout would otherwise block a polling cycle forever.
+   also on repeated failed logins (`MIN_UPDATE_INTERVAL` in `const.py`).
+4. **Always set a request timeout.** A hung request without one would block a polling cycle
+   forever. The default is `DEFAULT_REQUEST_TIMEOUT` in `const.py`, configurable via
+   `request_timeout` in the options flow.
 
 ## Common headers
 
@@ -53,20 +53,19 @@ integration:
 | `{"email": "...", "password": "..."}` | `200` + token |
 | `{"username": "...", "password": "..."}` | `400 "Unable to log in with provided credentials"` |
 
-Do not change it without checking against the live API: sending `username` broke login in v1.3.0
-and had to be reverted in v1.3.1.
+Do not change it without checking against the live API.
 
 ```json
 { "email": "user@example.com", "password": "…" }
 ```
 
 The response carries the token in `access_token` (the client also accepts `token` and
-`accessToken`). It lives for roughly one hour; the client renews it after **50 minutes**
-(`TOKEN_LIFETIME` in `client.py`).
+`accessToken`). It expires server-side; the client renews it earlier (`TOKEN_LIFETIME` in
+`client.py`).
 
-On `429` the client retries with exponential backoff (5 attempts, capped at 60 s), honouring the
-`Retry-After` header when present. After a failed login it waits `AUTH_FAILURE_COOLDOWN` (300 s)
-before retrying.
+On `429` the client retries with exponential backoff, honouring the `Retry-After` header when
+present (`DEFAULT_MAX_RETRIES`, `DEFAULT_RETRY_*` in `koolnova_api/session.py`). After a failed
+login it waits `AUTH_FAILURE_COOLDOWN` (`koolnova_api/const.py`) before retrying.
 
 ## Endpoints
 
@@ -87,7 +86,7 @@ List of sensors (zones). From each item in `data[]` the client uses `id`, `name`
 `temperature`, `setpoint_temperature`, `humidity`, `speed`, `updated_at` and the `topic_info` block
 (which provides the topic `id` and the connectivity data: RSSI, online, sync).
 
-Fields seen on each zone as of November 2026:
+Fields seen on each zone:
 
 | Field | Meaning |
 |---|---|

@@ -5,41 +5,28 @@ For the Koolnova API see [API.md](API.md); for usage problems, [TROUBLESHOOTING.
 
 ## Architecture
 
-```
-custom_components/koolnova/
-├── __init__.py        config entry setup/unload, creates the coordinator
-├── config_flow.py     UI setup (credentials) and options
-├── const.py           DOMAIN, limits, Koolnova code <-> HA mode mappings
-├── coordinator.py     DataUpdateCoordinator: does the polling
-├── climate.py         entities: project (global) and zone (per room)
-├── sensor.py          per-zone humidity and CO2 sensors (created when a zone starts reporting)
-├── manifest.json      version must match the git tag
-├── brand/             icon and logo served by HA (see its README)
-└── koolnova_api/      vendored REST client
-    ├── client.py      get_project, get_sensors, update_sensor, update_project
-    ├── session.py     login and token lifecycle
-    ├── const.py       URLs and required headers
-    └── exceptions.py  KoolnovaError
-```
+The integration is `custom_components/koolnova/`: one module per Home Assistant platform
+(`climate`, `sensor`, `switch`, `binary_sensor`), a `coordinator.py` that does the polling, a
+`config_flow.py` for setup and options, `const.py` for limits and the Koolnova code <-> HA mode
+mappings, `brand/` (see its README) and `koolnova_api/`, the vendored REST client (`client.py`,
+`session.py`, `const.py`, `exceptions.py`). `manifest.json`'s version must match the git tag.
 
 ### Vendored API client — the import rule
 
 `koolnova_api/` is a local fork of the `koolnova-api` client (credit to the original author). It
-lives inside the repository and is **not** a PyPI dependency, because the `koolnova-api` package
-(hyphen) collided with the local module — previously named `koolnovaapi` (no separator) — and
-caused 404 errors on every call.
+lives inside the repository and is **not** a PyPI dependency: the PyPI package name collided with
+the local module and made every call fail with 404.
 
 ```python
 from .koolnova_api.client import KoolnovaAPIRestClient   # ✅
-from koolnovaapi.client import KoolnovaAPIRestClient     # ❌ breaks the integration
+import koolnova_api.client                               # ❌ absolute import breaks the integration
 ```
 
-Never reintroduce an absolute `koolnova_api` import, and never add the PyPI package to
-`manifest.json`. After touching imports, clear the Python cache (`__pycache__`) before testing.
+Never use an absolute `koolnova_api` import, and never add the PyPI package to `manifest.json`. After touching imports, clear the Python cache (`__pycache__`) before testing.
 
 ### Entity scopes
 
-`climate.py` exposes classes that translate through the mappings in `const.py`
+`climate.py` exposes three classes that translate through the mappings in `const.py`
 (`KOOLNOVA_TO_HVAC_MODE`, `KOOLNOVA_ZONE_STATUS_TO_HVAC`, `KOOLNOVA_TO_FAN` and their
 auto-generated inverses):
 
@@ -55,18 +42,18 @@ connectivity `SensorEntity` in `climate.py` that also reports RSSI and per-room 
 ### Two polling rates
 
 The coordinator refreshes **sensors** every cycle, but the (more expensive) **project** list only
-every `project_update_frequency` cycles, caching the rest (`DEFAULT_PROJECT_UPDATE_FREQUENCY` = 10
-in `const.py`).
+every `project_update_frequency` cycles, caching the rest (`DEFAULT_PROJECT_UPDATE_FREQUENCY` in
+`const.py`).
 
 Option changes (interval, offered modes, temperature range) reload the coordinator's configuration
 without reloading the whole config entry (`async_reload_entry` in `__init__.py`).
 
 ### Limits imposed by Koolnova
 
-Koolnova bans your IP automatically if their API is polled more often than once every 30 s, and
-also on repeated failed logins. Hence `MIN_UPDATE_INTERVAL` is 30 s (the coordinator clamps older,
-more aggressive configurations to it) and a 300 s cooldown exists after a failed login. **Do not
-lower these limits.**
+Koolnova bans your IP automatically if their API is polled too often, and also on repeated failed
+logins (the exact rate is in [API.md](API.md)). Hence `MIN_UPDATE_INTERVAL` (`const.py`; the
+coordinator clamps older, more aggressive configurations to it) and `AUTH_FAILURE_COOLDOWN`
+(`koolnova_api/const.py`), a cooldown after a failed login. **Do not lower them.**
 
 ## Tests
 
@@ -86,36 +73,30 @@ hub endpoints. CI runs it on every push (`.github/workflows/validate.yml`).
 `http.server` (no mocks on `requests.Session`) and exercises login, the 401 refresh and the retry
 paths over a real socket. It still never touches api.koolnova.com, so no credentials are involved.
 
-**Never put real credentials in a test.** An earlier `tests/` directory held API exploration
-scripts with a plaintext password and had to be purged from git history in v1.2.6.
+**Never put real credentials in a test.**
 
-`tests/test_sensor.py` covers the sensor platform (entity creation, late-reporting zones, availability)
-and the coordinator cache with a fake coordinator, but it needs Home Assistant itself, so it skips
-where HA isn't installed (including CI). Run it inside the HA container, as a separate process:
+`tests/test_sensor.py` and `tests/test_climate.py` cover the sensor and climate platforms (entity
+creation, late-reporting zones, availability, service-call failures) and the coordinator cache
+with fakes, but need Home Assistant itself, so they skip where HA isn't installed (including CI).
+Run them inside the HA container, each as its own process (other modules stub
+`custom_components` in `sys.modules`): copy `tests/` and `custom_components/` to a scratch dir in
+the container and run `python -m unittest tests.test_sensor -v` from there, e.g. with
+`kubectl -n homelab exec deploy/homeassistant -c homeassistant -- …` and `kubectl cp`.
 
-```bash
-docker exec homeassistant rm -rf /tmp/kr && docker exec homeassistant mkdir /tmp/kr
-docker cp tests homeassistant:/tmp/kr/tests && docker cp custom_components homeassistant:/tmp/kr/custom_components
-docker exec -w /tmp/kr homeassistant python -m unittest tests.test_sensor -v
-```
-
-The rest of the HA side (`climate.py`, `config_flow.py`) is not covered: it needs a live Home
-Assistant instance and a real Koolnova account to mean anything.
+`config_flow.py` is not covered: it needs a live Home Assistant instance and a real Koolnova
+account to mean anything.
 
 ## Test environment
 
-Development happens against a Home Assistant instance in Docker, editing the integration directly
-in its configuration directory:
-
-```bash
-$HOME/docker/homeassistant/config/custom_components/koolnova
-docker restart homeassistant
-```
+Home Assistant runs in the cluster (`deploy/homeassistant` in namespace `homelab`, container
+`homeassistant`; its `/config` is a PVC). The integration under test lives in
+`/config/custom_components/koolnova` inside that container: copy your changes there, then restart
+HA with `kubectl -n homelab rollout restart deploy/homeassistant`.
 
 ### Before pushing
 
-1. `docker restart homeassistant`
-2. No errors in `docker logs homeassistant` or in `home-assistant.log`.
+1. Restart HA (above).
+2. No errors in `kubectl -n homelab logs deploy/homeassistant` or in `home-assistant.log`.
 3. Setup from the UI works.
 4. The `climate.koolnova_*` entities respond: temperature, mode and fan.
 
@@ -124,37 +105,12 @@ docker restart homeassistant
 The unit suite cannot exercise the Lovelace dashboard, and visual bugs there are expensive to chase
 blind (e.g. `stack` is **not** a valid card type — the registered type is `vertical-stack`). When a
 dashboard change must be verified, render it headlessly with Playwright instead of asking the user
-to reload:
-
-```python
-# Requires: pip install playwright, a chromium (e.g. /usr/bin/chromium), and
-# a long-lived HA token. Injects hassTokens so no login is needed.
-import json, time
-from playwright.sync_api import sync_playwright
-
-TOKEN = open("/home/admin/.config/ha-token").read().strip()
-BASE = "http://localhost:8123"  # or the Pi's LAN IP
-
-tokens = {
-    "hassUrl": BASE, "clientId": BASE + "/",
-    "access_token": TOKEN, "refresh_token": TOKEN,
-    "expires": int(time.time() * 1000) + 10 * 365 * 24 * 3600 * 1000,
-    "token_type": "Bearer",
-}
-init = f"localStorage.setItem('hassTokens', JSON.stringify({json.dumps(tokens)}))"
-
-with sync_playwright() as p:
-    browser = p.chromium.launch(executable_path="/usr/bin/chromium", headless=True,
-                                args=["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"])
-    ctx = browser.new_context()
-    ctx.add_init_script(init)
-    page = ctx.new_page()
-    page.goto(f"{BASE}/control-timbre/clima", wait_until="domcontentloaded")
-    page.wait_for_timeout(15000)
-    # Walk shadow DOM (DocumentFragment shadow roots have nodeType 11) to read cards.
-    page.screenshot(path="/tmp/ha_dash.png")
-    browser.close()
-```
+to reload. Needs Playwright with a Chromium (the system `/usr/bin/chromium` via `executable_path`, launched
+headless with `--no-sandbox --disable-gpu --disable-dev-shm-usage`) and a long-lived HA token.
+Log in without the UI by injecting `hassTokens` into `localStorage` through `add_init_script`
+(`hassUrl`, `clientId`, `access_token`, `refresh_token`, far-future `expires`, `token_type`),
+open the dashboard URL with `wait_until="domcontentloaded"`, wait for the cards to render, and
+screenshot or read them.
 
 Two gotchas that cost real debugging time:
 
@@ -179,7 +135,7 @@ HACS installs straight from the GitHub repository, so the root must keep the sta
 `zip_release`.
 
 > **The tag and the `"version"` field in `manifest.json` must be identical.** If they differ, HACS
-> fails with `Downloading … failed with (No content to download)`. Tag `v1.3.2` ↔ version `1.3.2`
+> fails with `Downloading … failed with (No content to download)`. Tag `vX.Y.Z` ↔ version `X.Y.Z`
 > (the `v` prefix belongs to the tag only). Never publish a release whose tag or name does not
 > match the manifest version: it becomes "latest" and breaks installs for everyone.
 
@@ -192,16 +148,7 @@ HACS installs straight from the GitHub repository, so the root must keep the sta
 
 ### `hacs.json`
 
-Only a small set of keys is allowed. Integration metadata (`domain`, `config_flow`, `iot_class`,
-`integration_type`…) belongs in `manifest.json`; putting it here makes the `hacsjson` check fail
-with *extra keys not allowed*.
+Only a small set of keys is allowed (see the current `hacs.json`). Integration metadata (`domain`,
+`config_flow`, `iot_class`, `integration_type`…) belongs in `manifest.json`; putting it here makes
+the `hacsjson` check fail with *extra keys not allowed*.
 
-```json
-{
-  "name": "Koolnova",
-  "homeassistant": "2025.12.0",
-  "render_readme": true,
-  "country": ["ES"],
-  "hide_default_branch": false
-}
-```

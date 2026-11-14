@@ -16,39 +16,32 @@ Run the client tests (stdlib `unittest`, no pytest, no HA install):
 python3 -m unittest discover -s tests -t . -v
 ```
 
-Every HTTP call is mocked. **Never put real credentials, tokens or hostnames
-in the tests** — an earlier tests directory held exploration scripts with a
-plaintext password and had to be purged from git history.
+Every HTTP call is mocked. **Never put real credentials, tokens or hostnames in the tests.**
 
 ## Rules that come from the API
 
-- Koolnova bans your IP when polled more than once every 30 s, and on
-  repeated failed logins. `MIN_UPDATE_INTERVAL` is 30 s and there is a 300 s
-  cooldown after a failed login — never lower them.
+- Koolnova bans your IP when polled too often and on repeated failed logins: never lower
+  `MIN_UPDATE_INTERVAL` or `AUTH_FAILURE_COOLDOWN` (see `docs/API.md`, `docs/DEVELOPMENT.md`).
 - The API needs browser-like headers on every request (`User-Agent`, `origin`,
   `referer`). Missing them produces 400/404s that look like auth failures.
-- `koolnova_api/` is vendored on purpose. Use relative imports
-  (`from .koolnova_api.client import ...`); never an absolute
-  `import koolnova_api`, and never add the PyPI `koolnova-api` package as a
-  dependency.
+- `koolnova_api/` is vendored on purpose: relative imports only (import rule in
+  `docs/DEVELOPMENT.md`).
 
 ## Conventions
 
 - Home Assistant-side code follows the HA developer guidelines. Translations
   go in `strings.json` and `translations/` (en, es, it).
-- Version changes: bump `"version"` in
-  `custom_components/koolnova/manifest.json` and add a matching entry to
-  `CHANGELOG.md`. The git tag and the manifest version must match exactly
-  (tag `v1.3.2` ↔ version `1.3.2`).
+- Version changes and releases: `docs/DEVELOPMENT.md` → "Publishing a release" (the git tag and
+  the manifest version must match exactly).
 - Update `docs/` (`API.md`, `DEVELOPMENT.md`, `TROUBLESHOOTING.md`) when
   behavior changes.
 
 ## Testing changes
 
-The vendored client is covered by the unit tests. The Home Assistant side
-(`climate.py`, `coordinator.py`, `config_flow.py`) has no automated tests — it
-only means something against a live HA instance and a real Koolnova account.
-If you changed it, say what you tested on the PR.
+The vendored client is covered by the unit tests; the sensor and climate platforms by tests that
+need Home Assistant installed. `config_flow.py` and the rest of the HA side only mean something
+against a live HA instance and a real Koolnova account: if you changed it, say what you tested on
+the PR.
 
 ## Issues and discussions
 

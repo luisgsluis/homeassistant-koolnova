@@ -7,10 +7,10 @@ Custom integration that controls **Koolnova** HVAC systems from Home Assistant t
 API. Zones, the project as a whole, and (on legacy accounts) the physical hub are exposed as
 `climate` entities, plus a connectivity binary sensor per project.
 
-Requires Home Assistant 2025.12.0 or newer and a Koolnova app account.
+Requires a recent Home Assistant (minimum version in `hacs.json`) and a Koolnova app account.
 
-> ⚠️ Koolnova bans your IP automatically if their API receives more than one request every
-> 30 seconds, and also on repeated failed logins. The integration enforces that minimum interval
+> ⚠️ Koolnova bans your IP automatically if their API is polled too often, and also on repeated
+> failed logins (limits in [docs/API.md](docs/API.md)). The integration enforces a minimum interval
 > and backs off after a failed login on purpose — do not force it lower.
 
 ## Features
@@ -29,7 +29,7 @@ Requires Home Assistant 2025.12.0 or newer and a Koolnova app account.
   codes sent to the API are unchanged)
 - 🛡️ **Robust against the brittle API**: retries with exponential backoff on timeouts, network
   errors, rate limiting (429) and server errors (5xx); auto-refreshes the session token on 401;
-  a 60 s per-request timeout; falls back to the `/devices/` endpoint when the main ones fail
+  a per-request timeout; falls back to the `/devices/` endpoint when the main ones fail
 - 🔄 **Staggered polling**: sensors every cycle, the more expensive project list cached
 - 🎛️ **Setup and intervals configurable from the UI**
 - 🌍 Translations: English, Spanish, Italian
@@ -44,7 +44,7 @@ Requires Home Assistant 2025.12.0 or newer and a Koolnova app account.
 | `switch.koolnova_<room>_power` | switch | One per room: power on/off toggle |
 | `sensor.koolnova_<room>_humidity` | sensor | One per room that reports humidity: relative humidity (%) |
 | `sensor.koolnova_<room>_co2` | sensor | One per room that reports CO₂ (ppm) |
-| `sensor.koolnova_connectivity_status` | sensor | Online/offline + WiFi signal, last sync, per-room last update |
+| `climate.koolnova_*` (connectivity) | climate | Online/offline + WiFi signal, last sync, per-room last update as attributes. A sensor class, but registered in the `climate` domain; its `entity_id` follows your HA language (e.g. `climate.koolnova_estado_de_conectividad`) |
 | `binary_sensor.koolnova_connectivity_status` | binary_sensor | Online/offline per project, ready for automations |
 
 The integration also fires a `koolnova_update_completed` event after every poll with counts and a
@@ -76,17 +76,9 @@ and restart Home Assistant.
 **Settings → Devices & services → Add integration → Koolnova**, using your Koolnova app
 credentials.
 
-Options available afterwards through *Configure*:
-
-| Option | Default | Range |
-|---|---|---|
-| Update interval | 30 s | 30–3600 s |
-| Project refresh frequency | every 10 cycles | 1–300 |
-| Project HVAC modes | COOL, HEAT | COOL / HEAT / OFF / AUTO |
-| Zone HVAC modes | OFF, AUTO | COOL / HEAT / OFF / AUTO |
-| Temperature range | 21–27 °C | 15–35 °C |
-| Temperature precision | 0.5 °C | 0.5 or 1 °C |
-| API request timeout | 45 s | 5–300 s |
+Options available afterwards through *Configure* (defaults and allowed ranges: `const.py`):
+update interval, project refresh frequency, offered project and zone HVAC modes, temperature range
+and precision, and API request timeout.
 
 ## Documentation
 
