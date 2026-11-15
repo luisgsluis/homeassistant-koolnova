@@ -37,7 +37,7 @@ auto-generated inverses):
   reverse-engineered endpoints in `docs/API.md#hub--legacy-controller-endpoints`.
 
 `binary_sensor.py` adds one `KoolnovaConnectivitySensor` per project (online/offline), on top of the
-connectivity `SensorEntity` in `climate.py` that also reports RSSI and per-room last-update.
+connectivity `SensorEntity` in `sensor.py` that also reports RSSI and per-room last-update.
 
 ### Two polling rates
 

@@ -17,7 +17,7 @@ STRINGS = INTEGRATION / "strings.json"
 
 SNAKE_CASE = re.compile(r"^[a-z][a-z0-9_]*$")
 
-# Attributes the connectivity entity exposes, in the order climate.py builds them.
+# Attributes the connectivity entity exposes, in the order sensor.py builds them.
 CONNECTIVITY_ATTRIBUTES = {"wifi_signal", "online", "last_update", "rooms_last_update"}
 
 
@@ -86,29 +86,32 @@ class AttributeKeyTest(unittest.TestCase):
     def test_connectivity_attributes_are_declared_in_every_file(self):
         for path in [STRINGS, *TRANSLATIONS]:
             document = _load(path)
-            for domain in ("climate", "sensor"):
-                declared = set(
-                    document["entity"][domain]["connectivity_status"]["state_attributes"]
-                )
-                with self.subTest(file=path.name, domain=domain):
-                    self.assertEqual(declared, CONNECTIVITY_ATTRIBUTES)
+            declared = set(
+                document["entity"]["sensor"]["connectivity_status"]["state_attributes"]
+            )
+            with self.subTest(file=path.name):
+                self.assertEqual(declared, CONNECTIVITY_ATTRIBUTES)
 
-    def test_the_entity_is_declared_under_the_domain_it_is_registered_in(self):
-        """It is added by the climate platform, so climate must be covered.
+    def test_the_entity_is_declared_only_under_the_sensor_domain(self):
+        """It is a SensorEntity added by the sensor platform; before v3 it was registered under climate."""
+        for path in [STRINGS, *TRANSLATIONS]:
+            entity = _load(path)["entity"]
+            with self.subTest(file=path.name):
+                self.assertIn("connectivity_status", entity["sensor"])
+                self.assertNotIn("connectivity_status", entity["climate"])
 
-        The sensor declaration is kept as well, for the day it moves to its
-        proper domain.
-        """
-        entity = _load(STRINGS)["entity"]
-        self.assertIn("connectivity_status", entity["climate"])
-        self.assertIn("connectivity_status", entity["sensor"])
+    def test_the_class_lives_in_the_sensor_platform(self):
+        sensor = (INTEGRATION / "sensor.py").read_text(encoding="utf-8")
+        climate = (INTEGRATION / "climate.py").read_text(encoding="utf-8")
+        self.assertIn("class KoolnovaConnectivitySensor(SensorEntity)", sensor)
+        self.assertNotIn("KoolnovaConnectivitySensor", climate)
 
 
-class ClimateSourceTest(unittest.TestCase):
-    """Guard the attribute keys at their source, since climate.py needs HA to import."""
+class ConnectivitySourceTest(unittest.TestCase):
+    """Guard the attribute keys at their source, since sensor.py needs HA to import."""
 
-    def test_climate_py_emits_only_snake_case_attribute_keys(self):
-        source = (INTEGRATION / "climate.py").read_text(encoding="utf-8")
+    def test_sensor_py_emits_only_snake_case_attribute_keys(self):
+        source = (INTEGRATION / "sensor.py").read_text(encoding="utf-8")
         block = source.split("def extra_state_attributes", 1)[-1]
 
         for key in CONNECTIVITY_ATTRIBUTES:
@@ -116,7 +119,7 @@ class ClimateSourceTest(unittest.TestCase):
                 self.assertIn(f'"{key}"', block)
 
     def test_no_accented_attribute_keys_remain(self):
-        source = (INTEGRATION / "climate.py").read_text(encoding="utf-8")
+        source = (INTEGRATION / "sensor.py").read_text(encoding="utf-8")
         for literal in ('"Señal WiFi"', '"Última actualización"'):
             with self.subTest(literal=literal):
                 self.assertNotIn(literal, source)

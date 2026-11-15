@@ -5,6 +5,18 @@ Every published version of the integration. The format follows
 [SemVer](https://semver.org/): the git tag and the `"version"` field in `manifest.json` are always
 identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
+## [Unreleased]
+
+### Changed (breaking)
+
+- **The connectivity entity moves to the `sensor` domain.** It is a `SensorEntity`, but the climate
+  platform added it, so Home Assistant registered it as `climate.koolnova_estado_de_conectividad`
+  and its `entity.sensor.connectivity_status` translation never applied. It is now added by the
+  sensor platform: `sensor.koolnova_<project>_estado_de_conectividad` (the name follows your HA language; it now sits on the same device as the connectivity binary sensor).
+  Same attributes, same unique ID. **Update dashboards, templates and automations** that read the
+  old `climate.` entity, and delete the old entry (it stays as an unavailable "restored" entity)
+  from Settings → Devices & services → Entities.
+
 ## [2.1.2] — 2026-11-13
 
 ### Fixed

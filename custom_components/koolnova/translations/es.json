@@ -54,23 +54,6 @@
           }
         }
       },
-      "connectivity_status": {
-        "name": "Estado de Conectividad",
-        "state_attributes": {
-          "wifi_signal": {
-            "name": "Señal WiFi"
-          },
-          "online": {
-            "name": "En línea"
-          },
-          "last_update": {
-            "name": "Última actualización"
-          },
-          "rooms_last_update": {
-            "name": "Última actualización por habitación"
-          }
-        }
-      },
       "koolnova_hub": {
         "name": "Koolnova Hub",
         "state_attributes": {

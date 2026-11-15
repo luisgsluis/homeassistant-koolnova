@@ -44,7 +44,7 @@ Requires a recent Home Assistant (minimum version in `hacs.json`) and a Koolnova
 | `switch.koolnova_<room>_power` | switch | One per room: power on/off toggle |
 | `sensor.koolnova_<room>_humidity` | sensor | One per room that reports humidity: relative humidity (%) |
 | `sensor.koolnova_<room>_co2` | sensor | One per room that reports CO₂ (ppm) |
-| `climate.koolnova_*` (connectivity) | climate | Online/offline + WiFi signal, last sync, per-room last update as attributes. A sensor class, but registered in the `climate` domain; its `entity_id` follows your HA language (e.g. `climate.koolnova_estado_de_conectividad`) |
+| `sensor.koolnova_*` (connectivity) | sensor | Online/offline + WiFi signal, last sync, per-room last update as attributes. Its `entity_id` follows your HA language (e.g. `sensor.koolnova_<project>_estado_de_conectividad`); before this change it was registered in the `climate` domain |
 | `binary_sensor.koolnova_connectivity_status` | binary_sensor | Online/offline per project, ready for automations |
 
 The integration also fires a `koolnova_update_completed` event after every poll with counts and a

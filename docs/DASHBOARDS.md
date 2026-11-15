@@ -12,8 +12,8 @@ room's `Room_Name` in the Koolnova app.
 
 No extra dependency: a `thermostat` card per zone (native temperature dial + HVAC mode buttons)
 with its power switch as a `tile` underneath, in a 2-column grid; a `thermostat` card for the
-global control; a `markdown` card reading the connectivity entity's attributes (registered in the `climate`
-domain; its `entity_id` follows your HA language, so use yours).
+global control; a `markdown` card reading the connectivity sensor's attributes (its `entity_id` follows your HA
+language, so use yours).
 
 ```yaml
 views:
@@ -41,7 +41,7 @@ views:
       - type: markdown
         content: |
           ## 📶 Connectivity
-          {% set sensor = 'climate.koolnova_estado_de_conectividad' %}
+          {% set sensor = 'sensor.koolnova_<project>_estado_de_conectividad' %}
           **Online:** {{ state_attr(sensor, 'online') }}
 
           **WiFi signal:** {{ state_attr(sensor, 'wifi_signal') }} dBm

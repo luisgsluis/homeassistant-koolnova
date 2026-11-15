@@ -1,7 +1,8 @@
-"""Sensor entities for Koolnova: per-zone relative humidity and CO2."""
+"""Sensor entities for Koolnova: the system connectivity sensor and per-zone relative humidity and CO2."""
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -9,6 +10,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import PERCENTAGE
+from homeassistant.helpers.entity import DeviceInfo
 
 from .const import DOMAIN
 
@@ -45,6 +47,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
     """
     coordinator = hass.data[DOMAIN][entry.entry_id]
     known = set()
+
+    # The single connectivity sensor of the system (always present), on the same device as the
+    # project's connectivity binary sensor, so its entity ID is `sensor.koolnova_<project>_...`.
+    projects = (coordinator.data or {}).get("projects", [])
+    async_add_entities(
+        [KoolnovaConnectivitySensor(coordinator, entry, projects[0] if projects else None)],
+        update_before_add=False,
+    )
 
     def _add_new_entities():
         new = []
@@ -110,3 +120,92 @@ class KoolnovaZoneSensor(SensorEntity):
         """Return the zone's reading."""
         self._update_sensor_data()
         return self._sensor.get(self._measurement.data_key)
+
+
+class KoolnovaConnectivitySensor(SensorEntity):
+    """Single sensor holding all connectivity information of the Koolnova system."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "connectivity_status"
+    _attr_icon = "mdi:router-wireless"
+    _attr_should_poll = False
+
+    def __init__(self, coordinator, config_entry, project=None):
+        """Initialize the connectivity sensor."""
+        self.coordinator = coordinator
+        self.config_entry = config_entry
+        self._attr_unique_id = f"{config_entry.entry_id}_connectivity_status"
+
+        topic_id = project.get("Topic_id", "global") if project else "global"
+        project_name = project.get("Project_Name", "System") if project else "System"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, f"{config_entry.entry_id}_{topic_id}")},
+            name=f"Koolnova {project_name}",
+            manufacturer="Koolnova",
+            model="REST API Gateway",
+        )
+
+    async def async_added_to_hass(self):
+        """Connect to coordinator."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self.coordinator.async_add_listener(self.async_write_ha_state)
+        )
+
+    @property
+    def state(self):
+        """Online/Offline, based on the state of the system."""
+        sensors = self.coordinator.data.get("sensors", [])
+        if not sensors:
+            return "Desconocido"
+
+        topic_info = sensors[0].get("topic_info", {})
+        is_online = topic_info.get("is_online")
+
+        return "Online" if is_online else "Offline"
+
+    @property
+    def extra_state_attributes(self):
+        """All connectivity attributes.
+
+        Attribute keys are snake_case identifiers, not display strings: Home
+        Assistant localises them through `state_attributes` in the translation
+        files. Per-room timestamps live in a single `rooms_last_update` mapping
+        because a dynamically named attribute per room could not be translated.
+        """
+        sensors = self.coordinator.data.get("sensors", [])
+        if not sensors:
+            return {}
+
+        # System-wide information
+        topic_info = sensors[0].get("topic_info", {})
+        attrs = {
+            "wifi_signal": topic_info.get("rssi"),
+            "online": topic_info.get("is_online"),
+        }
+
+        # Last update of the system
+        system_last_sync = topic_info.get("last_sync")
+        if system_last_sync:
+            attrs["last_update"] = self._as_datetime(system_last_sync)
+
+        # Last update of each room, keyed by room name
+        rooms_last_update = {}
+        for sensor in sensors:
+            room_name = sensor.get("Room_Name", f"room_{sensor.get('Room_id')}")
+            room_last_sync = sensor.get("topic_info", {}).get("last_sync")
+
+            if room_last_sync:
+                rooms_last_update[room_name] = self._as_datetime(room_last_sync)
+
+        attrs["rooms_last_update"] = rooms_last_update
+
+        return attrs
+
+    @staticmethod
+    def _as_datetime(value):
+        """Parse an API timestamp, falling back to the raw string."""
+        try:
+            return datetime.fromisoformat(value)
+        except (ValueError, TypeError):
+            return value
