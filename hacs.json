@@ -1,6 +1,6 @@
 {
   "name": "Koolnova",
-  "homeassistant": "2025.12.0",
+  "homeassistant": "2026.11.0",
   "render_readme": true,
   "country": ["ES"],
   "hide_default_branch": false

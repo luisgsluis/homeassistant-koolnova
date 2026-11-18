@@ -5,6 +5,17 @@ Every published version of the integration. The format follows
 [SemVer](https://semver.org/): the git tag and the `"version"` field in `manifest.json` are always
 identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
+## [3.0.1] — 2026-11-18
+
+### Fixed
+
+- **Minimum Home Assistant version raised to 2026.11.0.** Since 2.1.1 the climate entities use
+  `native_current_temperature`, `native_target_temperature` and `_attr_native_temperature_unit`,
+  which Home Assistant only reads from 2026.11.0. `hacs.json` still declared 2025.12.0, so HACS
+  offered 2.1.1–3.0.0 to older installs, where the climate entities failed to load and no
+  `climate.koolnova_*` was created. If you are on Home Assistant 2026.10 or earlier, stay on
+  2.1.0 (HACS → Redownload → 2.1.0) or update Home Assistant. Reported by @50bbx (#8).
+
 ## [3.0.0] — 2026-11-15
 
 ### Changed (breaking)

@@ -7,7 +7,7 @@ Custom integration that controls **Koolnova** HVAC systems from Home Assistant t
 API. Zones, the project as a whole, and (on legacy accounts) the physical hub are exposed as
 `climate` entities, plus a connectivity binary sensor per project.
 
-Requires a recent Home Assistant (minimum version in `hacs.json`) and a Koolnova app account.
+Requires Home Assistant 2026.11.0 or newer (since 2.1.1 the climate entities use properties that older versions do not read) and a Koolnova app account.
 
 > ⚠️ Koolnova bans your IP automatically if their API is polled too often, and also on repeated
 > failed logins (limits in [docs/API.md](docs/API.md)). The integration enforces a minimum interval
