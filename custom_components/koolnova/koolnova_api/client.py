@@ -140,6 +140,12 @@ class KoolnovaAPIRestClient:
                 "is_online": project["topic"]["is_online"],
                 "eco": project["topic"]["eco"],
                 "last_sync": project["topic"]["last_sync"],
+                # Enabled project modes: "0"/"1" per mode code (see const.KOOLNOVA_TO_HVAC_MODE)
+                "Topic_modes": next(
+                    (c.get("value") for c in project["topic"].get("configurations") or []
+                     if isinstance(c, dict) and c.get("key") == "TopicModes"),
+                    None,
+                ),
             })
 
         return projects

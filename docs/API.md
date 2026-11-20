@@ -78,7 +78,13 @@ page=1  page_size=25  ordering=-start_date  search=  is_oem=false
 ```
 
 From each item in `data[]` the client uses `name` and, inside `topic`: `id`, `name`, `mode`,
-`is_stop`, `is_online`, `eco`, `last_sync`.
+`is_stop`, `is_online`, `eco`, `last_sync`, and from `topic.configurations` (a list of
+`{key, value}`) the `TopicModes` entry.
+
+`TopicModes` says which project modes the installation offers: a string of `"0"`/`"1"` where the
+character at index N enables mode N (see the project mode table). `"11110001"` enables ventilation,
+cooling, heating and dehumidification, and no floor mode; positions without a known mode are
+ignored. Koolnova's web app shows a mode button only when its position is `"1"`.
 
 ### `GET /topics/sensors/`
 
@@ -171,12 +177,26 @@ encodings** — an easy mistake to make.
 
 ### Project mode (`mode`)
 
-| Code | HA mode |
-|---|---|
-| `"1"` | `cool` |
-| `"2"` | `off` |
-| `"4"` | `heat` |
-| `"6"` | `auto` |
+The meaning of each code comes from Koolnova's web app (the `app-topic-modes` component), which
+uses the same list for every account; `TopicModes` decides which ones an installation offers.
+
+| Code | Koolnova mode | HA mode |
+|---|---|---|
+| `"0"` | Ventilation | `fan_only` |
+| `"1"` | Cooling (air) | `cool` |
+| `"2"` | Heating (air) | `heat` |
+| `"3"` | Dehumidification | `dry` |
+| `"4"` | Radiant floor | `heat` |
+| `"5"` | Floor cooling + cold air | `cool` |
+| `"6"` | Radiant floor + hot air | `heat` |
+
+When setting a mode, the integration sends the first code the installation enables, in this order:
+`heat` → `"2"`, `"6"`, `"4"`; `cool` → `"1"`, `"5"`; `dry` → `"3"`; `fan_only` → `"0"`. Without a
+`TopicModes` value it assumes `"1"` and `"2"`.
+
+The project mode is not an on/off switch: on/off is per zone (`status`). Sending a code the
+installation does not enable is accepted by the API, but the system then turns its zones off
+(observed with `"4"` on an air-only system).
 
 ### Zone status (`status`)
 

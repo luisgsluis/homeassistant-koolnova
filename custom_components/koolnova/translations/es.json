@@ -33,6 +33,9 @@
           "max_temp": "Temperatura Máxima",
           "temp_precision": "Precisión de Temperatura",
           "request_timeout": "Timeout de Petición a la API (segundos)"
+        },
+        "data_description": {
+          "project_hvac_modes": "El control global solo ofrece los modos que tu sistema Koolnova tiene habilitados. Desmarca un modo aquí para ocultarlo; marcar uno que el sistema no tiene habilitado no tiene efecto."
         }
       }
     },

@@ -29,7 +29,8 @@ from .const import (
     DEFAULT_MAX_TEMP,
     MAX_CONFIGURABLE_TEMP,
     DEFAULT_TEMP_PRECISION,
-    AVAILABLE_HVAC_MODES,
+    AVAILABLE_PROJECT_HVAC_MODES,
+    AVAILABLE_ZONE_HVAC_MODES,
     AVAILABLE_TEMP_PRECISIONS,
     CONF_UPDATE_INTERVAL,
     CONF_PROJECT_UPDATE_FREQUENCY,
@@ -167,6 +168,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         current_interval = current_options.get(CONF_UPDATE_INTERVAL, current_data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL))
         current_project_update_freq = current_options.get(CONF_PROJECT_UPDATE_FREQUENCY, current_data.get(CONF_PROJECT_UPDATE_FREQUENCY, DEFAULT_PROJECT_UPDATE_FREQUENCY))
         current_project_modes = current_options.get(CONF_PROJECT_HVAC_MODES, current_data.get(CONF_PROJECT_HVAC_MODES, [mode.value for mode in DEFAULT_PROJECT_HVAC_MODES]))
+        # Older versions offered off/auto here (sent as codes "2"/"6"): drop what the form no longer offers
+        current_project_modes = [m for m in current_project_modes if m in {mode.value for mode in AVAILABLE_PROJECT_HVAC_MODES}]
         current_zone_modes = current_options.get(CONF_ZONE_HVAC_MODES, current_data.get(CONF_ZONE_HVAC_MODES, [mode.value for mode in DEFAULT_ZONE_HVAC_MODES]))
         current_min_temp = current_options.get(CONF_MIN_TEMP, current_data.get(CONF_MIN_TEMP, DEFAULT_MIN_TEMP))
         current_max_temp = current_options.get(CONF_MAX_TEMP, current_data.get(CONF_MAX_TEMP, DEFAULT_MAX_TEMP))
@@ -183,10 +186,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Range(min=MIN_PROJECT_UPDATE_FREQUENCY, max=MAX_PROJECT_UPDATE_FREQUENCY)
             ),
             vol.Required(CONF_PROJECT_HVAC_MODES, default=current_project_modes): cv.multi_select({
-                mode.value: mode.value.title() for mode in AVAILABLE_HVAC_MODES
+                mode.value: mode.value.replace("_", " ").title() for mode in AVAILABLE_PROJECT_HVAC_MODES
             }),
             vol.Required(CONF_ZONE_HVAC_MODES, default=current_zone_modes): cv.multi_select({
-                mode.value: mode.value.title() for mode in AVAILABLE_HVAC_MODES
+                mode.value: mode.value.title() for mode in AVAILABLE_ZONE_HVAC_MODES
             }),
             vol.Required(CONF_MIN_TEMP, default=current_min_temp): vol.All(
                 vol.Coerce(float),
