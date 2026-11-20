@@ -237,6 +237,27 @@ class ClimateServiceTest(unittest.TestCase):
         self.assertEqual([c.args for c in z.coordinator.async_update_sensor_data.await_args_list],
                          [(1, {"status": "00"}), (1, {"status": "01"})])
 
+    def test_zone_follows_its_own_project(self):
+        # Account with two projects: the zone of the second must not read or write the first
+        coord = coordinator(async_update_sensor_data=AsyncMock(), async_update_project_data=AsyncMock())
+        coord.data["sensors"] = [{"Room_id": 9, "Room_Name": "B", "Room_status": "03", "Topic_id": 8}]
+        coord.data["projects"] = [{"Topic_id": 7, "Mode": "1", "Topic_modes": "0110000"},
+                                  {"Topic_id": 8, "Mode": "4", "Topic_modes": "01001001"}]
+        z = climate_mod.KoolnovaZoneEntity(coord, ENTRY, coord.data["sensors"][0])
+        z.hass = MagicMock()
+        z.async_write_ha_state = MagicMock()
+        self.assertEqual(z.hvac_mode, HVACMode.HEAT)
+        self.assertEqual(z.hvac_modes, [HVACMode.OFF, HVACMode.HEAT, HVACMode.COOL])
+        run(z.async_set_hvac_mode(HVACMode.COOL))
+        coord.async_update_project_data.assert_awaited_once_with(8, {"mode": "1"})
+
+    def test_zone_of_an_unknown_project_with_several_projects_shows_on(self):
+        coord = coordinator()
+        coord.data["sensors"] = [{"Room_id": 9, "Room_Name": "B", "Room_status": "03", "Topic_id": 99}]
+        coord.data["projects"] = [{"Topic_id": 7, "Mode": "1"}, {"Topic_id": 8, "Mode": "4"}]
+        z = climate_mod.KoolnovaZoneEntity(coord, ENTRY, coord.data["sensors"][0])
+        self.assertEqual(z.hvac_mode, HVACMode.AUTO)
+
     def test_hub_failure_raises(self):
         coord = coordinator()
         coord.hass.async_add_executor_job = AsyncMock(side_effect=RuntimeError("x"))

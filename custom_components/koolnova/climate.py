@@ -70,27 +70,31 @@ def _resultado_global(hass, titulo: str, que: str, result: dict) -> None:
 ZONE_STATUS_FOLLOW = HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.AUTO]  # "03": on, in the system's mode
 
 
-def _project(coordinator):
-    """The project (system) the zones belong to, or None if not loaded."""
+def _project(coordinator, topic_id):
+    """The project (system) a zone belongs to, or None if not loaded.
+
+    Matched by Topic_id; without a match, only an account with a single project is assumed.
+    """
     projects = (coordinator.data or {}).get("projects") or []
-    return projects[0] if projects else None
+    match = next((p for p in projects if p.get("Topic_id") == topic_id), None)
+    return match or (projects[0] if len(projects) == 1 else None)
 
 
-def _system_modes(coordinator):
+def _system_modes(coordinator, topic_id):
     """HA modes the installation enables (its TopicModes configuration)."""
-    project = _project(coordinator)
+    project = _project(coordinator, topic_id)
     return enabled_hvac_modes(project.get("Topic_modes") if project else None)
 
 
-def _system_mode(coordinator):
+def _system_mode(coordinator, topic_id):
     """The system's current mode as an HA mode, or None if unknown."""
-    project = _project(coordinator)
+    project = _project(coordinator, topic_id)
     return KOOLNOVA_TO_HVAC_MODE.get(project.get("Mode")) if project else None
 
 
-async def _set_system_mode(hass, coordinator, hvac_mode):
+async def _set_system_mode(hass, coordinator, topic_id, hvac_mode):
     """Switch the whole system to an HA mode: Koolnova has one mode for every zone."""
-    project = _project(coordinator)
+    project = _project(coordinator, topic_id)
     if not project:
         raise HomeAssistantError("Koolnova project not loaded yet")
     # First code the installation enables for this mode, same as the project entity
@@ -549,7 +553,7 @@ class KoolnovaZoneEntity(ClimateEntity):
         """Off plus the system's modes, or the configured zone modes if not following the system."""
         if not self._follows_system():
             return self._get_zone_hvac_modes()
-        return [HVACMode.OFF, *_system_modes(self.coordinator)]
+        return [HVACMode.OFF, *_system_modes(self.coordinator, self._topic_id())]
 
     @property
     def min_temp(self):
@@ -573,6 +577,10 @@ class KoolnovaZoneEntity(ClimateEntity):
             self.coordinator.async_add_listener(self.async_write_ha_state)
         )
 
+    def _topic_id(self):
+        """Topic_id of the project this zone belongs to."""
+        return self._sensor.get("Topic_id")
+
     def _update_sensor_data(self):
         """Update local sensor data from coordinator."""
         if not self.coordinator.data or not isinstance(self.coordinator.data.get("sensors"), list):
@@ -591,7 +599,7 @@ class KoolnovaZoneEntity(ClimateEntity):
         current_mode = KOOLNOVA_ZONE_STATUS_TO_HVAC.get(status, HVACMode.OFF)
         if current_mode == HVACMode.AUTO and self._follows_system():
             # On, in the system's mode; "auto" ("On") only while that mode is unknown
-            return _system_mode(self.coordinator) or HVACMode.AUTO
+            return _system_mode(self.coordinator, self._topic_id()) or HVACMode.AUTO
         if current_mode not in self.hvac_modes:
             return HVACMode.OFF
         return current_mode
@@ -702,8 +710,8 @@ class KoolnovaZoneEntity(ClimateEntity):
             # Like the Koolnova app's zone mode picker: picking a mode switches the
             # whole system (one mode for every zone, last one set wins) and turns the
             # zone on. Picking the mode the system is already in only turns it on.
-            if hvac_mode != _system_mode(self.coordinator):
-                await _set_system_mode(self.hass, self.coordinator, hvac_mode)
+            if hvac_mode != _system_mode(self.coordinator, self._topic_id()):
+                await _set_system_mode(self.hass, self.coordinator, self._topic_id(), hvac_mode)
             self._update_sensor_data()
             if self._sensor.get("Room_status") != ZONE_STATUS_FOLLOW:
                 await self._set_status(ZONE_STATUS_FOLLOW)
