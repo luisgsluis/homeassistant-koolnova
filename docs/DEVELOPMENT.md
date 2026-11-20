@@ -45,6 +45,13 @@ The coordinator refreshes **sensors** every cycle, but the (more expensive) **pr
 every `project_update_frequency` cycles, caching the rest (`DEFAULT_PROJECT_UPDATE_FREQUENCY` in
 `const.py`).
 
+After a project mode change (`async_update_project_data` with `mode`), the cycles read the
+**projects instead of the sensors** (same number of requests) until the system reports the
+requested mode or `MODE_CHANGE_TIMEOUT` passes. Meanwhile the requested mode stays in the cache
+and the project entity's `pending_mode` attribute shows it; on timeout the real mode is shown and
+a persistent notification is created. These cycles fire `koolnova_update_completed` with
+`update_type: "projects_only"`.
+
 Option changes (interval, offered modes, temperature range) reload the coordinator's configuration
 without reloading the whole config entry (`async_reload_entry` in `__init__.py`).
 

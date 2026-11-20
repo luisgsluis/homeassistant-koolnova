@@ -22,6 +22,10 @@ DEFAULT_PROJECT_UPDATE_FREQUENCY = 10  # refresh projects every N updates
 MIN_PROJECT_UPDATE_FREQUENCY = 1      # configurable minimum (always refresh)
 MAX_PROJECT_UPDATE_FREQUENCY = 300    # configurable maximum
 
+# After a project mode change, how long to keep reading the project (instead of the
+# sensors) until the system reports the new mode, before giving up and notifying.
+MODE_CHANGE_TIMEOUT = 300  # seconds
+
 # Per-request HTTP timeout for Koolnova API calls (seconds).
 # 45s is the value recommended by Koolnova support (see docs/API.md).
 DEFAULT_REQUEST_TIMEOUT = 45   # seconds

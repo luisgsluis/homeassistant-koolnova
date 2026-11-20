@@ -5,6 +5,20 @@ Every published version of the integration. The format follows
 [SemVer](https://semver.org/): the git tag and the `"version"` field in `manifest.json` are always
 identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
+## [Unreleased]
+
+### Fixed
+
+- **The global mode follows what the system really does after a mode change.** Koolnova answers a
+  mode change with the requested mode at once, but the system applies it seconds to minutes later,
+  or not at all; the integration only re-read the project every `project_update_frequency` polls
+  (5 minutes by default), so the global control could show a mode the system was not in. After a
+  change, the polls now read the project instead of the sensors (no extra request) until the
+  system reports the requested mode, for up to 5 minutes. If it never does, the real mode is shown
+  and a persistent notification says so. While waiting, the project entity's new `pending_mode`
+  attribute shows the requested mode, and `koolnova_update_completed` fires with
+  `update_type: "projects_only"`.
+
 ## [3.0.1] — 2026-11-18
 
 ### Fixed

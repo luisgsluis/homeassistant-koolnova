@@ -120,6 +120,10 @@ Updates the whole project.
 | `{"is_stop": true}` | Global stop |
 | `{"is_online": true}` | Online state |
 
+The answer to a `mode` change echoes the requested mode at once, but the system applies it
+seconds to minutes later, or not at all (a mode the installation does not support is reverted).
+Only a later `GET /projects/` shows the mode the system is really in.
+
 ## Hub / legacy controller endpoints
 
 Legacy Koolnova controllers (a physical hub instead of per-zone devices) expose a few extra
