@@ -50,16 +50,27 @@ class FakeCoordinator:
 class SensorPlatformTest(unittest.TestCase):
     def setUp(self):
         self.added = []
+        self.connectivity = []
         self.unloads = []
         self.entry = SimpleNamespace(entry_id=ENTRY_ID, async_on_unload=self.unloads.append)
 
     def setup(self, sensors):
         self.coord = FakeCoordinator(sensors)
         hass = SimpleNamespace(data={DOMAIN: {ENTRY_ID: self.coord}})
-        asyncio.run(sensor_mod.async_setup_entry(hass, self.entry, lambda ents, **kw: self.added.extend(ents)))
+        asyncio.run(sensor_mod.async_setup_entry(hass, self.entry, self.add_entities))
+
+    def add_entities(self, ents, **kw):
+        # Since 3.0.0 the platform also adds the project's connectivity sensor: keep it apart
+        for e in ents:
+            (self.connectivity if isinstance(e, sensor_mod.KoolnovaConnectivitySensor) else self.added).append(e)
 
     def uids(self):
         return sorted(e.unique_id for e in self.added)
+
+    def test_connectivity_sensor_is_added_once(self):
+        self.setup([zone(1, "A", humidity=50.0)])
+        self.coord.refresh()
+        self.assertEqual(len(self.connectivity), 1)
 
     def test_only_zones_with_a_value_get_entities(self):
         self.setup([zone(1, "A", humidity=50.0), zone(2, "B"), zone(3, "C", humidity=40.0, co2=600)])
