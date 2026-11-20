@@ -117,8 +117,14 @@ Updates the whole project.
 |---|---|
 | `{"mode": "1"}` | Global mode (see table) |
 | `{"eco": true}` | ECO mode |
-| `{"is_stop": true}` | Global stop |
+| `{"is_stop": true}` | Project stop (see below) |
 | `{"is_online": true}` | Online state |
+
+`is_stop` is the webapp's project on/off button ("Estado del proyecto"; it sends
+`{"is_stop": !is_stop}`). It does reach the hardware, but it is not the same as turning every zone
+off: the wall control unit shows "Stop", the webapp draws every zone as off, the zone mode can't be
+changed, and zones can't be turned on until `is_stop` is cleared. The integration never writes it:
+its global on/off pushes `status` to each zone instead.
 
 ## Hub / legacy controller endpoints
 

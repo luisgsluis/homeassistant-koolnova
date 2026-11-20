@@ -106,8 +106,9 @@ identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 - **Global on/off for the project entity.** `KoolnovaProjectEntity` (`climate.koolnova_<project>`,
   e.g. "Control Global") now supports `TURN_ON`/`TURN_OFF`: turning on pushes `auto` status to every
   zone, turning off pushes `off` status to every zone — the same per-zone mechanism already used by
-  `async_set_preset_mode`. The project's own `mode`/`is_stop` fields are echoed back by the API but
-  were confirmed not to drive the hardware, so they are no longer written by these actions.
+  `async_set_preset_mode`. These actions don't write the project's `is_stop` field. (This entry
+  first said `is_stop` doesn't drive the hardware. It does, but as a separate "Stop" state that
+  blocks turning zones on, not as on/off; see `docs/API.md`.)
 
 ### Fixed
 
