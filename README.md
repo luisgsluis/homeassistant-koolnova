@@ -38,7 +38,7 @@ Requires Home Assistant 2026.11.0 or newer (since 2.1.1 the climate entities use
 
 | Entity | Domain | Purpose |
 |---|---|---|
-| `climate.koolnova_*` (project) | climate | Global control: target temperature (median of zones), project HVAC mode, ECO/stop attributes |
+| `climate.koolnova_*` (project) | climate | Global control: target temperature (median of zones), project HVAC mode, on/off (Off turns every zone off and remembers which were on; turning back on restores those), ECO/stop attributes |
 | `climate.koolnova_*` (zone) | climate | One per room: temperature, setpoint, HVAC mode, fan speed |
 | `climate.koolnova_hub_*` | climate | Legacy hub, one per hub: ON/OFF + manual / auto / planning |
 | `switch.koolnova_<room>_power` | switch | One per room: power on/off toggle |

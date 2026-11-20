@@ -5,6 +5,20 @@ Every published version of the integration. The format follows
 [SemVer](https://semver.org/): the git tag and the `"version"` field in `manifest.json` are always
 identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
+## [Unreleased]
+
+### Changed
+
+- **Global control on/off (proposal, under discussion).** The project entity now offers **Off** in
+  its mode picker and reports `off` only when **every** zone is off (it used to report `off`
+  whenever most zones were off, even with some rooms running). Off remembers which zones were on
+  (attribute `rooms_to_restore`, kept across Home Assistant restarts) and turns every zone off.
+  Picking a mode while on only switches the project mode; picking a mode (or `turn_on`) while off
+  switches the mode and turns back on only the remembered zones, and fails with an error if none
+  are remembered. The **Zone Mode** preset still turns every zone on or off. Dashboards and
+  automations that read the project's `state` as "off" will now see the mode while a minority of
+  zones run.
+
 ## [3.0.1] — 2026-11-18
 
 ### Fixed

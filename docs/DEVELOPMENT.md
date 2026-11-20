@@ -30,7 +30,10 @@ Never use an absolute `koolnova_api` import, and never add the PyPI package to `
 (`KOOLNOVA_TO_HVAC_MODE`, `KOOLNOVA_ZONE_STATUS_TO_HVAC`, `KOOLNOVA_TO_FAN` and their
 auto-generated inverses):
 
-- `KoolnovaProjectEntity` — the whole project: global HVAC mode, ECO, stop.
+- `KoolnovaProjectEntity` — the whole project: global HVAC mode, ECO, stop. Its on/off is per-zone
+  status, not the project's `is_stop` (a separate "Stop" state on the wall unit that blocks zones):
+  Off remembers the zones that were on (`rooms_to_restore`, restored with `RestoreEntity`) and
+  turning back on restores only those.
 - `KoolnovaZoneEntity` — one per sensor/room: setpoint, status, fan speed.
 - `KoolnovaHubEntity` — one per **legacy hub** (only created when the account has a hub): ON/OFF as
   HVACMode AUTO/OFF plus the behavior mode (manual / auto / planning). Backed by the

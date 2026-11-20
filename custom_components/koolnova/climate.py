@@ -21,6 +21,7 @@ from homeassistant.components.climate import (
 from homeassistant.const import UnitOfTemperature
 from homeassistant.components.persistent_notification import async_create
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
     DOMAIN,
@@ -84,7 +85,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities(entities, update_before_add=False)
 
-class KoolnovaProjectEntity(ClimateEntity):
+ZONE_STATUS_OFF = HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.OFF]   # "02"
+ZONE_STATUS_ON = HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.AUTO]   # "03"
+
+NOTHING_TO_RESTORE = (
+    "No zones to turn back on (none were on at the last global Off): turn zones on "
+    "individually, or use Zone Mode to turn every zone on"
+)
+
+
+class KoolnovaProjectEntity(ClimateEntity, RestoreEntity):
     """Project entity with global control: temperature, project HVAC mode, zone fan speed, and zone HVAC mode."""
 
     _attr_has_entity_name = True
@@ -109,6 +119,10 @@ class KoolnovaProjectEntity(ClimateEntity):
 
         self._global_fan_mode = FAN_AUTO
         self._global_zone_hvac_mode = HVACMode.AUTO
+        # Room ids that were on at the last global Off: turning the global control back on
+        # turns these (and only these) on again. Koolnova has no equivalent, so it lives in HA
+        # and survives restarts through RestoreEntity (attribute `rooms_to_restore`).
+        self._rooms_to_restore = []
 
     def _get_config_value(self, key, default):
         """Get configuration value from options or data."""
@@ -138,8 +152,8 @@ class KoolnovaProjectEntity(ClimateEntity):
 
     @property
     def hvac_modes(self):
-        """Return configured project HVAC modes."""
-        return self._get_project_hvac_modes()
+        """Off (every zone off) plus the configured project HVAC modes."""
+        return [HVACMode.OFF, *(m for m in self._get_project_hvac_modes() if m != HVACMode.OFF)]
 
     @property
     def fan_modes(self):
@@ -192,8 +206,11 @@ class KoolnovaProjectEntity(ClimateEntity):
         return self._get_temp_precision()
 
     async def async_added_to_hass(self):
-        """Connect to coordinator."""
+        """Connect to coordinator and restore the zones to turn back on."""
         await super().async_added_to_hass()
+        last = await self.async_get_last_state()
+        if last and isinstance(last.attributes.get("rooms_to_restore"), list):
+            self._rooms_to_restore = list(last.attributes["rooms_to_restore"])
         self.async_on_remove(
             self.coordinator.async_add_listener(self.async_write_ha_state)
         )
@@ -209,15 +226,14 @@ class KoolnovaProjectEntity(ClimateEntity):
     def hvac_mode(self):
         """Return current project HVAC mode.
 
-        The project's own `mode`/`is_stop` fields are echoed back by the API
-        but don't drive the hardware (confirmed live): the real global on/off
-        is per-zone status, same as `preset_mode` below. Off is reported when
-        most zones are off (or there are none); otherwise the project's
-        compressor mode (cool/heat) is reported, even if it falls outside the
-        configured (selectable) project_hvac_modes.
+        The global on/off is per-zone status (the project's `is_stop` is a different state: the
+        wall unit shows "Stop" and zones cannot be turned on, so it is not used here). Off is
+        reported only when every zone is off (or there are none); otherwise the project's
+        compressor mode (cool/heat) is reported, even if it falls outside the configured
+        (selectable) project_hvac_modes.
         """
         self._update_project_data()
-        if self.preset_mode in (None, HVACMode.OFF.value):
+        if not self._rooms_on():
             return HVACMode.OFF
         return KOOLNOVA_TO_HVAC_MODE.get(self._project["Mode"], HVACMode.OFF)
 
@@ -295,7 +311,7 @@ class KoolnovaProjectEntity(ClimateEntity):
             "eco_mode": self._project["eco"],
             "is_stop": self._project.get("is_stop"),
             # Raw compressor mode (cool/heat), independent of on/off: unlike `hvac_mode`/`state`
-            # (which report off whenever most zones are off), this keeps reporting the last
+            # (which report off when every zone is off), this keeps reporting the last
             # cool/heat selection even while the project is off, for dashboards that need to
             # distinguish "off in cool mode" from "off in heat mode".
             "compressor_mode": KOOLNOVA_TO_HVAC_MODE.get(self._project["Mode"], HVACMode.OFF).value,
@@ -307,6 +323,7 @@ class KoolnovaProjectEntity(ClimateEntity):
             "global_zone_hvac_mode": self._global_zone_hvac_mode.value,
             "zones_status_breakdown": zone_status_breakdown,
             "zones_fan_breakdown": zone_fan_breakdown,
+            "rooms_to_restore": self._rooms_to_restore,
         }
 
         # Agregar datos de conectividad del sistema (desde sensores)
@@ -323,9 +340,15 @@ class KoolnovaProjectEntity(ClimateEntity):
         return attrs
 
     async def async_set_hvac_mode(self, hvac_mode):
-        """Set project HVAC mode."""
+        """Off turns every zone off (remembering which were on). Any other mode switches the
+        project mode; if the global control was off, it also turns back on the zones that were
+        on before (see async_turn_on)."""
         if hvac_mode not in self.hvac_modes:
             _LOGGER.error("Unsupported project HVAC mode: %s. Available: %s", hvac_mode, self.hvac_modes)
+            return
+
+        if hvac_mode == HVACMode.OFF:
+            await self.async_turn_off()
             return
 
         koolnova_mode = HVAC_TO_KOOLNOVA_MODE.get(hvac_mode)
@@ -333,6 +356,17 @@ class KoolnovaProjectEntity(ClimateEntity):
             _LOGGER.error("HVAC mode not mapped: %s", hvac_mode)
             return
 
+        was_off = not self._rooms_on()
+        if was_off and not self._restorable_rooms():
+            # Refuse before changing anything, rather than switch the mode and keep showing Off.
+            raise HomeAssistantError(NOTHING_TO_RESTORE)
+
+        await self._set_project_mode(hvac_mode, koolnova_mode)
+        if was_off:
+            await self._restore_rooms()
+
+    async def _set_project_mode(self, hvac_mode, koolnova_mode):
+        """Send the project mode."""
         body = {"mode": koolnova_mode}
 
         try:
@@ -413,21 +447,50 @@ class KoolnovaProjectEntity(ClimateEntity):
             _fallo(self.hass, "Koolnova Global Temperature", "Error setting global temperature", err)
         _resultado_global(self.hass, "Koolnova Global Temperature", f"Global temperature {temp}", result)
 
-    async def async_turn_on(self):
-        """Turn the project on: push AUTO to every zone, regardless of the configured
-        (selectable) project/zone HVAC modes.
+    def _rooms_on(self):
+        """Ids of the zones that are not off."""
+        return [s.get("Room_id") for s in self.coordinator.data.get("sensors", [])
+                if s.get("Room_status", ZONE_STATUS_OFF) != ZONE_STATUS_OFF]
 
-        The project's `mode`/`is_stop` fields are echoed back by the API but
-        don't drive the hardware (confirmed live): the actual global on/off is
-        per-zone status, same mechanism as `async_set_preset_mode` below.
+    def _restorable_rooms(self):
+        """Remembered zones that still exist."""
+        known = {s.get("Room_id") for s in self.coordinator.data.get("sensors", [])}
+        return [r for r in self._rooms_to_restore if r in known]
+
+    async def _restore_rooms(self):
+        """Turn the remembered zones back on."""
+        rooms = self._restorable_rooms()
+        if not rooms:
+            raise HomeAssistantError(NOTHING_TO_RESTORE)
+        _LOGGER.info("Turning project on: restoring zones %s", rooms)
+        ok = failed = 0
+        for room_id in rooms:
+            try:
+                await self.coordinator.async_update_sensor_data(room_id, {"status": ZONE_STATUS_ON})
+                ok += 1
+            except Exception as err:
+                failed += 1
+                _LOGGER.error("Failed to turn zone %s on: %s", room_id, err)
+        _resultado_global(self.hass, "Koolnova Global Control", "Turning project on",
+                          {"updated": ok, "failed": failed})
+
+    async def async_turn_on(self):
+        """Global control on: turn back on the zones that were on at the last global Off.
+
+        Nothing to do if some zone is already on. The Zone Mode preset still turns every zone
+        on or off.
         """
-        _LOGGER.info("Turning project on: setting all zones to auto")
-        await self._set_all_zones_status(HVACMode.AUTO, HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.AUTO], "Turning project on")
+        if self._rooms_on():
+            return
+        await self._restore_rooms()
 
     async def async_turn_off(self):
-        """Turn the project off: push OFF to every zone (see async_turn_on)."""
-        _LOGGER.info("Turning project off: setting all zones to off")
-        await self._set_all_zones_status(HVACMode.OFF, HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.OFF], "Turning project off")
+        """Global control off: remember which zones are on, then turn every zone off."""
+        on = self._rooms_on()
+        if on:  # turning off when already off keeps the previous memory
+            self._rooms_to_restore = on
+        _LOGGER.info("Turning project off (remembering zones %s)", self._rooms_to_restore)
+        await self._set_all_zones_status(HVACMode.OFF, ZONE_STATUS_OFF, "Turning project off")
 
 class KoolnovaZoneEntity(ClimateEntity):
     """Individual room zone as a climate device."""
