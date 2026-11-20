@@ -1,5 +1,8 @@
 name: Validate
 
+# HACS and hassfest only. The tests live in tests.yml, without a schedule: GitHub disables a
+# scheduled workflow after 60 days without activity, push and pull_request triggers included.
+
 on:
   push:
     branches: [main]
@@ -28,16 +31,3 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: home-assistant/actions/hassfest@master
-
-  tests:
-    name: Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-      - name: Install the only runtime dependency of the vendored client
-        run: pip install requests
-      - name: Run the test suite
-        run: python -m unittest discover -s tests -t . -v

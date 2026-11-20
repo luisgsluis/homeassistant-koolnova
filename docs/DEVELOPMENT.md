@@ -75,7 +75,8 @@ python3 -m unittest discover -s tests -t . -v
 Every HTTP call is mocked. The suite pins down the things that have actually broken in production:
 the `email` login field, the browser headers, `PUT` vs `PATCH` per endpoint, the auth-failure
 cooldown, the code tables, the retry/backoff and 401-refresh behaviour of `rest_request`, and the
-hub endpoints. CI runs it on every push (`.github/workflows/validate.yml`).
+hub endpoints. CI runs it on every push to `main` and every pull request
+(`.github/workflows/tests.yml`); `main` only accepts a merge with these checks green.
 
 `tests/test_integration.py` goes a step further: it points the real client + session at a local
 `http.server` (no mocks on `requests.Session`) and exercises login, the 401 refresh and the retry
@@ -85,7 +86,8 @@ paths over a real socket. It still never touches api.koolnova.com, so no credent
 
 `tests/test_sensor.py` and `tests/test_climate.py` cover the sensor and climate platforms (entity
 creation, late-reporting zones, availability, service-call failures) and the coordinator cache
-with fakes, but need Home Assistant itself, so they skip where HA isn't installed (including CI).
+with fakes, but need Home Assistant itself, so they skip where HA isn't installed. CI runs them in the
+`Tests (Home Assistant)` job, with the minimum HA version from `hacs.json`.
 Run them inside the HA container, each as its own process (other modules stub
 `custom_components` in `sys.modules`): copy `tests/` and `custom_components/` to a scratch dir in
 the container and run `python -m unittest tests.test_sensor -v` from there, e.g. with
