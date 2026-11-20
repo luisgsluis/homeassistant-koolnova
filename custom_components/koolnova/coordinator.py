@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.exceptions import ConfigEntryAuthFailed
 
-from .koolnova_api.client import KoolnovaAPIRestClient
+from .koolnova_api.client import KoolnovaAPIRestClient, topic_modes
 from .koolnova_api.exceptions import KoolnovaError
 
 from .const import (
@@ -140,6 +140,7 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
                         "Topic_Name": topic_info.get("name", "Main"),
                         "Topic_id": topic_id,
                         "Mode": topic_info.get("mode"),
+                        "Topic_modes": topic_modes(topic_info),
                         "is_stop": topic_info.get("is_stop"),
                         "is_online": topic_info.get("is_online"),
                         "eco": topic_info.get("eco"),

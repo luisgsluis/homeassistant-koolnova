@@ -18,6 +18,6 @@ These cover the parts that have actually broken in production:
 | `test_const.py` | the mode/status/fan code tables and their auto-generated inverses |
 | `test_integration.py` | login, 401 refresh and retries over a real socket against a local `http.server` |
 | `test_translations.py` | translation files and the attribute keys they describe (technical keys, display text in the translations) |
-| `test_sensor.py`, `test_climate.py` | the sensor and climate platforms; need Home Assistant installed, otherwise they skip |
+| `test_sensor.py`, `test_climate.py`, `test_fallback.py` | the sensor and climate platforms and the `/devices/` fallback; need Home Assistant installed, otherwise they skip |
 
 The rest of the HA side (e.g. `config_flow.py`) is not covered: it needs a running Home Assistant to be meaningful. How to run the HA-dependent tests: [../docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md).

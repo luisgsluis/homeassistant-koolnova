@@ -4,7 +4,7 @@ import logging
 import unittest
 from unittest.mock import MagicMock, patch
 
-from koolnova_api.client import KoolnovaAPIRestClient
+from koolnova_api.client import KoolnovaAPIRestClient, topic_modes
 from koolnova_api.const import AUTH_FAILURE_COOLDOWN
 from koolnova_api.exceptions import KoolnovaError
 
@@ -360,3 +360,15 @@ class HubMethodsTest(ClientTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TopicModesTest(unittest.TestCase):
+    def test_reads_the_topicmodes_configuration(self):
+        topic = {"configurations": [{"key": "AllowEco", "value": "false"},
+                                    {"key": "TopicModes", "value": "01001001"}]}
+        self.assertEqual(topic_modes(topic), "01001001")
+
+    def test_none_without_configurations(self):
+        self.assertIsNone(topic_modes({}))
+        self.assertIsNone(topic_modes(None))
+        self.assertIsNone(topic_modes({"configurations": None}))

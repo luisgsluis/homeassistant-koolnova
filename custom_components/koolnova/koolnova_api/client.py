@@ -15,6 +15,12 @@ from .const import AUTH_FAILURE_COOLDOWN, COMMON_HEADERS, PATCH_HEADERS
 _LOGGER = logging.getLogger(__name__)
 
 
+def topic_modes(topic):
+    """TopicModes value of a topic ("0"/"1" per mode code), or None if missing."""
+    return next((c.get("value") for c in (topic or {}).get("configurations") or []
+                 if isinstance(c, dict) and c.get("key") == "TopicModes"), None)
+
+
 class KoolnovaAPIRestClient:
     """Proxy to the Koolnova REST API."""
 
@@ -141,11 +147,7 @@ class KoolnovaAPIRestClient:
                 "eco": project["topic"]["eco"],
                 "last_sync": project["topic"]["last_sync"],
                 # Enabled project modes: "0"/"1" per mode code (see const.KOOLNOVA_TO_HVAC_MODE)
-                "Topic_modes": next(
-                    (c.get("value") for c in project["topic"].get("configurations") or []
-                     if isinstance(c, dict) and c.get("key") == "TopicModes"),
-                    None,
-                ),
+                "Topic_modes": topic_modes(project["topic"]),
             })
 
         return projects
