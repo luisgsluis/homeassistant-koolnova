@@ -1,8 +1,10 @@
 """DataUpdateCoordinator for Koolnova."""
 
 import logging
+import time
 from datetime import datetime, timedelta
 
+from homeassistant.components.persistent_notification import async_create
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.exceptions import ConfigEntryAuthFailed
@@ -18,6 +20,7 @@ from .const import (
     DEFAULT_PROJECT_UPDATE_FREQUENCY,
     CONF_REQUEST_TIMEOUT,
     DEFAULT_REQUEST_TIMEOUT,
+    MODE_CHANGE_TIMEOUT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -71,6 +74,10 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             CONF_PROJECT_UPDATE_FREQUENCY,
             config_data.get(CONF_PROJECT_UPDATE_FREQUENCY, DEFAULT_PROJECT_UPDATE_FREQUENCY)
         )
+
+        # Project modes requested but not yet reported by the system:
+        # {Topic_id: (mode code, monotonic deadline)}. See _async_check_pending_modes.
+        self._pending_modes = {}
 
     def _fetch_hubs(self) -> list:
         """Discover hubs and read their state.
@@ -228,7 +235,8 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
         Additionally, this method fires a "koolnova_update_completed" event after each update
         with detailed information about the update type, success status, and data counts.
         The event data includes:
-        - update_type: "initial", "full", "sensors_only", "cached", or "failed"
+        - update_type: "initial", "full", "sensors_only", "projects_only" (while a mode
+          change is pending, see _async_check_pending_modes), "cached", or "failed"
         - success: boolean indicating if the update was successful
         - timestamp: timestamp of when the update occurred
         - entry_id: unique identifier for this integration instance
@@ -244,7 +252,22 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             dict: Data structure with 'projects' and 'sensors' keys
         """
         try:
-            if self.data and self.data.get("projects"):
+            if self.data and self.data.get("projects") and self._pending_modes:
+                # MODE CHANGE PENDING: read the projects instead of the sensors (same
+                # number of requests) until the system reports the requested mode
+                result = await self._async_check_pending_modes()
+
+                self.hass.bus.async_fire("koolnova_update_completed", {
+                    "update_type": "projects_only",
+                    "success": True,
+                    "timestamp": datetime.now().isoformat(),
+                    "entry_id": self.config_entry.entry_id,
+                    "lastsync": result.get("projects", [{}])[0].get("last_sync") if result.get("projects") else None,
+                    "projects_count": len(result.get("projects", [])),
+                })
+
+                return result
+            elif self.data and self.data.get("projects"):
                 # PERIODIC UPDATE STRATEGY with project update counter
                 self._project_update_counter += 1
 
@@ -352,6 +375,63 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
                 
                 raise
 
+    def expect_project_mode(self, topic_id, code: str) -> None:
+        """Watch the next polls until the system reports the requested mode."""
+        self._pending_modes[topic_id] = (code, time.monotonic() + MODE_CHANGE_TIMEOUT)
+
+    def pending_mode(self, topic_id):
+        """Mode code requested for a project and not yet reported by the system, or None."""
+        pending = self._pending_modes.get(topic_id)
+        return pending[0] if pending else None
+
+    async def _async_check_pending_modes(self) -> dict:
+        """Read the projects (instead of the sensors) to confirm a requested mode change.
+
+        Koolnova answers a mode change with the requested mode at once, but the
+        system applies it seconds to minutes later, or not at all. While a change
+        is pending, the requested mode is kept in the cache. When the system
+        reports it, or MODE_CHANGE_TIMEOUT passes, the real mode is shown again;
+        on timeout a persistent notification says the change was not applied.
+        Sensors and hubs are kept from the cache.
+        """
+        projects = await self.hass.async_add_executor_job(self._fetch_projects)
+        self._project_update_counter = 0  # the projects were just read
+        now = time.monotonic()
+        listed = set()
+        for project in projects:
+            topic_id = project.get("Topic_id")
+            listed.add(topic_id)
+            pending = self._pending_modes.get(topic_id)
+            if pending is None:
+                continue
+            code, deadline = pending
+            real = project.get("Mode")
+            if real == code:
+                _LOGGER.debug("Project %s reports the requested mode %s", topic_id, code)
+                del self._pending_modes[topic_id]
+            elif now >= deadline:
+                del self._pending_modes[topic_id]
+                _LOGGER.warning(
+                    "Project %s did not switch to mode %s within %ss; it reports mode %s",
+                    topic_id, code, MODE_CHANGE_TIMEOUT, real,
+                )
+                async_create(
+                    self.hass,
+                    f"Koolnova did not switch to mode {code} within "
+                    f"{MODE_CHANGE_TIMEOUT // 60} minutes; the system reports mode {real}.",
+                    title="Koolnova Project Mode",
+                )
+            else:
+                project["Mode"] = code  # keep showing the request while it is on its way
+        for topic_id in list(self._pending_modes):
+            if topic_id not in listed:  # project gone from the account
+                del self._pending_modes[topic_id]
+        return {
+            "projects": projects,
+            "sensors": self.data.get("sensors", []),
+            "hubs": self.data.get("hubs", []),
+        }
+
     def _fetch_projects(self):
         """Fetch only projects from API."""
         try:
@@ -451,6 +531,9 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             )
             _LOGGER.debug("API response for project %s: %s", topic_id, result)
             self._update_project_in_cache(topic_id, result)
+            if "mode" in payload:
+                # The answer echoes the requested mode before the system applies it
+                self.expect_project_mode(topic_id, payload["mode"])
             self.async_update_listeners()
             return result
         except Exception as err:

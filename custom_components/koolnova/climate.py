@@ -357,6 +357,9 @@ class KoolnovaProjectEntity(ClimateEntity):
             # the installation enables, from its TopicModes configuration.
             "project_mode_code": self._project.get("Mode"),
             "system_modes": [mode.value for mode in self._get_system_hvac_modes()],
+            # Mode requested from Home Assistant that the system has not reported yet (None when
+            # there is none). While set, `compressor_mode` shows the requested mode.
+            "pending_mode": self._pending_mode(),
             "total_zones": sensors_count,
             "control_type": "global_controller",
             "configured_project_modes": [mode.value for mode in self._get_project_hvac_modes()],
@@ -379,6 +382,14 @@ class KoolnovaProjectEntity(ClimateEntity):
                 attrs["last_sync"] = system_connectivity["last_sync"]
 
         return attrs
+
+    def _pending_mode(self):
+        """HA mode requested for this project and not yet applied by the system, or None."""
+        code = self.coordinator.pending_mode(self._project.get("Topic_id"))
+        if code is None:
+            return None
+        mode = KOOLNOVA_TO_HVAC_MODE.get(code)
+        return mode.value if mode else code
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set project HVAC mode."""

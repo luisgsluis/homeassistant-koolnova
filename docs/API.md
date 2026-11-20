@@ -132,6 +132,10 @@ off: the wall control unit shows "Stop", the webapp draws every zone as off, the
 changed, and zones can't be turned on until `is_stop` is cleared. The integration never writes it:
 its global on/off pushes `status` to each zone instead.
 
+The answer to a `mode` change echoes the requested mode at once, but the system applies it
+seconds to minutes later, or not at all (a mode the installation does not support is reverted).
+Only a later `GET /projects/` shows the mode the system is really in.
+
 ## Hub / legacy controller endpoints
 
 Legacy Koolnova controllers (a physical hub instead of per-zone devices) expose a few extra

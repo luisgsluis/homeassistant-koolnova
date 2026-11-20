@@ -24,7 +24,6 @@ identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
   heat, cool, dry and fan only, and cannot add a mode the system doesn't enable. Existing
   installs keep their saved selection (cool and heat unless changed), so dry and fan only appear
   only after selecting them in the options; off/auto saved by older versions are ignored.
-
 - **Zones show the system mode instead of `auto`.** Zone status `"03"` means "on, in the system's
   mode" (what Koolnova's app and wall unit use), and was shown as `auto` ("On"). Apple Home, through
   HA's HomeKit Bridge, turns `auto` into a "Keep between" range that Koolnova can't store, and HA
@@ -40,6 +39,18 @@ identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
 - `project_mode_code` (raw Koolnova code) and `system_modes` (modes the installation enables)
   attributes on the project entity. `compressor_mode` can now also be `dry` or `fan_only`.
+
+### Fixed
+
+- **The global mode follows what the system really does after a mode change.** Koolnova answers a
+  mode change with the requested mode at once, but the system applies it seconds to minutes later,
+  or not at all; the integration only re-read the project every `project_update_frequency` polls
+  (5 minutes by default), so the global control could show a mode the system was not in. After a
+  change, the polls now read the project instead of the sensors (no extra request) until the
+  system reports the requested mode, for up to 5 minutes. If it never does, the real mode is shown
+  and a persistent notification says so. While waiting, the project entity's new `pending_mode`
+  attribute shows the requested mode, and `koolnova_update_completed` fires with
+  `update_type: "projects_only"`.
 
 ## [3.0.1] — 2026-11-18
 
