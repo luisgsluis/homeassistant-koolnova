@@ -66,6 +66,44 @@ def _resultado_global(hass, titulo: str, que: str, result: dict) -> None:
     if not ok:
         raise HomeAssistantError(texto)
 
+
+ZONE_STATUS_FOLLOW = HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.AUTO]  # "03": on, in the system's mode
+
+
+def _project(coordinator):
+    """The project (system) the zones belong to, or None if not loaded."""
+    projects = (coordinator.data or {}).get("projects") or []
+    return projects[0] if projects else None
+
+
+def _system_modes(coordinator):
+    """HA modes the installation enables (its TopicModes configuration)."""
+    project = _project(coordinator)
+    return enabled_hvac_modes(project.get("Topic_modes") if project else None)
+
+
+def _system_mode(coordinator):
+    """The system's current mode as an HA mode, or None if unknown."""
+    project = _project(coordinator)
+    return KOOLNOVA_TO_HVAC_MODE.get(project.get("Mode")) if project else None
+
+
+async def _set_system_mode(hass, coordinator, hvac_mode):
+    """Switch the whole system to an HA mode: Koolnova has one mode for every zone."""
+    project = _project(coordinator)
+    if not project:
+        raise HomeAssistantError("Koolnova project not loaded yet")
+    # First code the installation enables for this mode, same as the project entity
+    code = mode_code_for(hvac_mode, project.get("Topic_modes"))
+    if code is None:
+        raise HomeAssistantError(f"Mode {hvac_mode} is not enabled on this Koolnova system")
+    try:
+        await coordinator.async_update_project_data(project["Topic_id"], {"mode": code})
+        _LOGGER.info("Project mode updated to %s (code %s) from a zone", hvac_mode, code)
+    except Exception as err:
+        _fallo(hass, "Koolnova Project Mode", "Error updating project mode", err)
+
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Koolnova climate entities."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
@@ -450,6 +488,8 @@ class KoolnovaZoneEntity(ClimateEntity):
 
     # Relabels the zone's HVAC modes in the UI ("auto" shows as "On"): the
     # codes sent to the API are untouched (see entity_component translations).
+    # With the default zone modes "auto" is only shown while the system mode is
+    # unknown (see _follows_system).
     _attr_translation_key = "koolnova_zone"
 
     def __init__(self, coordinator, config_entry, sensor):
@@ -476,7 +516,19 @@ class KoolnovaZoneEntity(ClimateEntity):
         """Get configured zone HVAC modes."""
         mode_values = self._get_config_value(CONF_ZONE_HVAC_MODES, [mode.value for mode in DEFAULT_ZONE_HVAC_MODES])
         return [HVACMode(value) for value in mode_values]
-        
+
+    def _follows_system(self):
+        """True when "auto" is a configured zone mode (the default).
+
+        Zone status "03" (upstream's "auto") means "on, in the system's mode": it
+        is what the Koolnova app and wall unit send. Such a zone is shown in the
+        system's mode (heat, cool...), so the HA thermostat card and HomeKit get
+        a single-setpoint thermostat instead of an "auto" range Koolnova can't
+        store. Without "auto" in the zone modes, the configured modes are used as
+        they are.
+        """
+        return HVACMode.AUTO in self._get_zone_hvac_modes()
+
     def _get_min_temp(self):
         """Get configured minimum temperature."""
         return self._get_config_value(CONF_MIN_TEMP, DEFAULT_MIN_TEMP)
@@ -491,8 +543,10 @@ class KoolnovaZoneEntity(ClimateEntity):
 
     @property
     def hvac_modes(self):
-        """Return configured HVAC modes for zones."""
-        return self._get_zone_hvac_modes()
+        """Off plus the system's modes, or the configured zone modes if not following the system."""
+        if not self._follows_system():
+            return self._get_zone_hvac_modes()
+        return [HVACMode.OFF, *_system_modes(self.coordinator)]
 
     @property
     def min_temp(self):
@@ -532,6 +586,9 @@ class KoolnovaZoneEntity(ClimateEntity):
         self._update_sensor_data()
         status = self._sensor.get("Room_status", "02")
         current_mode = KOOLNOVA_ZONE_STATUS_TO_HVAC.get(status, HVACMode.OFF)
+        if current_mode == HVACMode.AUTO and self._follows_system():
+            # On, in the system's mode; "auto" ("On") only while that mode is unknown
+            return _system_mode(self.coordinator) or HVACMode.AUTO
         if current_mode not in self.hvac_modes:
             return HVACMode.OFF
         return current_mode
@@ -638,6 +695,17 @@ class KoolnovaZoneEntity(ClimateEntity):
             _LOGGER.error("Unsupported HVAC mode for zone: %s. Allowed: %s", hvac_mode, self.hvac_modes)
             return
 
+        if self._follows_system() and hvac_mode != HVACMode.OFF:
+            # Like the Koolnova app's zone mode picker: picking a mode switches the
+            # whole system (one mode for every zone, last one set wins) and turns the
+            # zone on. Picking the mode the system is already in only turns it on.
+            if hvac_mode != _system_mode(self.coordinator):
+                await _set_system_mode(self.hass, self.coordinator, hvac_mode)
+            self._update_sensor_data()
+            if self._sensor.get("Room_status") != ZONE_STATUS_FOLLOW:
+                await self._set_status(ZONE_STATUS_FOLLOW)
+            return
+
         status_code = HVAC_TO_KOOLNOVA_ZONE_STATUS.get(hvac_mode)
         if not status_code:
             _LOGGER.error("HVAC mode not mapped: %s", hvac_mode)
@@ -652,10 +720,18 @@ class KoolnovaZoneEntity(ClimateEntity):
         except Exception as err:
             _fallo(self.hass, "Koolnova", f"Error updating zone HVAC mode for {self._attr_name}", err)
 
+    async def _set_status(self, status_code):
+        """Send a raw zone status."""
+        _LOGGER.info("Setting status %s for %s", status_code, self._attr_name)
+        try:
+            await self.coordinator.async_update_sensor_data(self._sensor_id, {"status": status_code})
+        except Exception as err:
+            _fallo(self.hass, "Koolnova", f"Error updating zone status for {self._attr_name}", err)
+
     async def async_turn_on(self):
-        """Turn the zone on (AUTO, or the first configured non-off mode)."""
-        if HVACMode.AUTO in self.hvac_modes:
-            await self.async_set_hvac_mode(HVACMode.AUTO)
+        """Turn the zone on: status "03" (the system's mode, unchanged), or the first configured non-off mode."""
+        if self._follows_system():
+            await self._set_status(ZONE_STATUS_FOLLOW)
         else:
             for mode in self.hvac_modes:
                 if mode != HVACMode.OFF:

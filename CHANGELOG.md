@@ -25,6 +25,17 @@ identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
   installs keep their saved selection (cool and heat unless changed), so dry and fan only appear
   only after selecting them in the options; off/auto saved by older versions are ignored.
 
+- **Zones show the system mode instead of `auto`.** Zone status `"03"` means "on, in the system's
+  mode" (what Koolnova's app and wall unit use), and was shown as `auto` ("On"). Apple Home, through
+  HA's HomeKit Bridge, turns `auto` into a "Keep between" range that Koolnova can't store, and HA
+  showed "On" without saying whether it heats or cools. With `auto` among the zone HVAC modes (the
+  default), a zone now offers off plus the system's modes and shows the system mode (`heat`,
+  `cool`...) while on. Picking a mode on a zone works like the Koolnova app's zone mode picker:
+  the mode the system is already in only turns the zone on; another one switches the whole system
+  (one mode for every zone) and turns the zone on. Off and turn on/off send `"02"`/`"03"` without
+  changing the system mode. Automations and dashboards that check a zone for `auto` must check
+  for `heat`/`cool`/... (or "not `off`") instead. Without `auto` in the zone modes nothing changes.
+
 ### Added
 
 - `project_mode_code` (raw Koolnova code) and `system_modes` (modes the installation enables)

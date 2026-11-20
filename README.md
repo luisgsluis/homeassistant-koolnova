@@ -15,8 +15,9 @@ Requires Home Assistant 2026.11.0 or newer (since 2.1.1 the climate entities use
 
 ## Features
 
-- ❄️ **HVAC modes**: per zone on/off, and the system mode globally (HEAT / COOL / DRY / FAN ONLY,
-  whichever your installation enables)
+- ❄️ **HVAC modes**: the system mode (HEAT / COOL / DRY / FAN ONLY, whichever your installation
+  enables), globally and per zone. A zone that is on shows the system mode; picking a mode on a
+  zone turns it on and, if it differs, switches the whole system, like the Koolnova app
 - 🌡️ **Target temperature** per zone and global median across zones
 - 🌬️ **Fan speed** per zone (LOW / MEDIUM / HIGH / AUTO)
 - 🏠 **Global project control** (mode, ECO, stop) on a single `climate` entity
@@ -26,8 +27,7 @@ Requires Home Assistant 2026.11.0 or newer (since 2.1.1 the climate entities use
 - 💧 **Per-zone humidity and CO₂**: a `sensor` per room that reports one
   (`sensor.koolnova_<room>_humidity`, `sensor.koolnova_<room>_co2`)
 - 🔌 **Per-zone on/off**: a `switch` per room (`switch.koolnova_<room>_power`) toggles the zone
-  straight from the dashboard; zone `climate` modes display as **On/Off** instead of Auto/Off (the
-  codes sent to the API are unchanged)
+  straight from the dashboard, without changing the system mode
 - 🛡️ **Robust against the brittle API**: retries with exponential backoff on timeouts, network
   errors, rate limiting (429) and server errors (5xx); auto-refreshes the session token on 401;
   a per-request timeout; falls back to the `/devices/` endpoint when the main ones fail
