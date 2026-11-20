@@ -209,9 +209,10 @@ class KoolnovaProjectEntity(ClimateEntity):
     def hvac_mode(self):
         """Return current project HVAC mode.
 
-        The project's own `mode`/`is_stop` fields are echoed back by the API
-        but don't drive the hardware (confirmed live): the real global on/off
-        is per-zone status, same as `preset_mode` below. Off is reported when
+        On/off comes from per-zone status, same as `preset_mode` below, not
+        from the project's `is_stop`: that is a separate "Stop" state (the wall
+        unit shows "Stop" and zones can't be turned on until it is cleared),
+        not the same as all zones off. Off is reported when
         most zones are off (or there are none); otherwise the project's
         compressor mode (cool/heat) is reported, even if it falls outside the
         configured (selectable) project_hvac_modes.
@@ -417,9 +418,11 @@ class KoolnovaProjectEntity(ClimateEntity):
         """Turn the project on: push AUTO to every zone, regardless of the configured
         (selectable) project/zone HVAC modes.
 
-        The project's `mode`/`is_stop` fields are echoed back by the API but
-        don't drive the hardware (confirmed live): the actual global on/off is
-        per-zone status, same mechanism as `async_set_preset_mode` below.
+        This doesn't write the project's `is_stop`. That field does drive the
+        hardware, but as a separate "Stop" state: the wall unit shows "Stop"
+        (not off) and zones can't be turned on while it is set. So the global
+        on/off uses per-zone status instead, same mechanism as
+        `async_set_preset_mode` below.
         """
         _LOGGER.info("Turning project on: setting all zones to auto")
         await self._set_all_zones_status(HVACMode.AUTO, HVAC_TO_KOOLNOVA_ZONE_STATUS[HVACMode.AUTO], "Turning project on")
