@@ -84,6 +84,7 @@ and precision, and API request timeout.
 
 - [CHANGELOG.md](CHANGELOG.md) — version history
 - [docs/DASHBOARDS.md](docs/DASHBOARDS.md) — example Lovelace dashboards
+- [docs/HOMEKIT.md](docs/HOMEKIT.md) — using the integration with Apple Home through the HomeKit Bridge
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — common problems
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — architecture, test environment and releases
 - [docs/API.md](docs/API.md) — the Koolnova API, documented by reverse engineering
