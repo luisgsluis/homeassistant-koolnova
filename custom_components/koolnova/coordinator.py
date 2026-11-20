@@ -255,19 +255,26 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
             if self.data and self.data.get("projects") and self._pending_modes:
                 # MODE CHANGE PENDING: read the projects instead of the sensors (same
                 # number of requests) until the system reports the requested mode
-                result = await self._async_check_pending_modes()
+                try:
+                    result = await self._async_check_pending_modes()
+                except Exception as err:
+                    # No fallback here: poll as usual this time (sensors, with the /devices/ fallback)
+                    _LOGGER.warning("Could not read the projects to confirm a mode change: %s", err)
+                    self._drop_expired_pending_modes()
+                    result = None
 
-                self.hass.bus.async_fire("koolnova_update_completed", {
-                    "update_type": "projects_only",
-                    "success": True,
-                    "timestamp": datetime.now().isoformat(),
-                    "entry_id": self.config_entry.entry_id,
-                    "lastsync": result.get("projects", [{}])[0].get("last_sync") if result.get("projects") else None,
-                    "projects_count": len(result.get("projects", [])),
-                })
+                if result is not None:
+                    self.hass.bus.async_fire("koolnova_update_completed", {
+                        "update_type": "projects_only",
+                        "success": True,
+                        "timestamp": datetime.now().isoformat(),
+                        "entry_id": self.config_entry.entry_id,
+                        "lastsync": result.get("projects", [{}])[0].get("last_sync") if result.get("projects") else None,
+                        "projects_count": len(result.get("projects", [])),
+                    })
+                    return result
 
-                return result
-            elif self.data and self.data.get("projects"):
+            if self.data and self.data.get("projects"):
                 # PERIODIC UPDATE STRATEGY with project update counter
                 self._project_update_counter += 1
 
@@ -383,6 +390,15 @@ class KoolnovaDataUpdateCoordinator(DataUpdateCoordinator):
         """Mode code requested for a project and not yet reported by the system, or None."""
         pending = self._pending_modes.get(topic_id)
         return pending[0] if pending else None
+
+    def _drop_expired_pending_modes(self) -> None:
+        """Stop waiting for mode changes whose timeout has passed without a confirmation."""
+        now = time.monotonic()
+        for topic_id, (code, deadline) in list(self._pending_modes.items()):
+            if now >= deadline:
+                del self._pending_modes[topic_id]
+                _LOGGER.warning("Project %s: could not confirm mode %s within %ss",
+                                topic_id, code, MODE_CHANGE_TIMEOUT)
 
     async def _async_check_pending_modes(self) -> dict:
         """Read the projects (instead of the sensors) to confirm a requested mode change.

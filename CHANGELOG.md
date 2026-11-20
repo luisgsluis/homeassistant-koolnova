@@ -50,7 +50,8 @@ identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
   system reports the requested mode, for up to 5 minutes. If it never does, the real mode is shown
   and a persistent notification says so. While waiting, the project entity's new `pending_mode`
   attribute shows the requested mode, and `koolnova_update_completed` fires with
-  `update_type: "projects_only"`.
+  `update_type: "projects_only"`. If the project can't be read, that poll reads the sensors as
+  usual (with the `/devices/` fallback).
 
 ## [3.0.1] — 2026-11-18
 

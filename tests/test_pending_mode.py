@@ -20,7 +20,6 @@ try:
     from custom_components.koolnova.const import MODE_CHANGE_TIMEOUT
     from custom_components.koolnova.coordinator import KoolnovaDataUpdateCoordinator
     from homeassistant.components.climate import HVACMode
-    from homeassistant.helpers.update_coordinator import UpdateFailed
     HAVE_HA = True
 except ImportError:  # no Home Assistant in this environment
     HAVE_HA = False
@@ -125,13 +124,35 @@ class PendingModeCoordinatorTest(unittest.TestCase):
         run(coord._async_update_data())
         self.assertEqual(coord._project_update_counter, 0)
 
-    def test_failed_read_keeps_the_mode_pending(self):
+    def test_failed_read_keeps_the_mode_pending_and_polls_as_usual(self):
         coord = make_coordinator()
         self.change_mode(coord, "2")
         coord.client.get_project.side_effect = RuntimeError("timeout")
-        with self.assertRaises(UpdateFailed):
-            run(coord._async_update_data())
+        run(coord._async_update_data())
+        coord.client.get_sensors.assert_called_once()
         self.assertEqual(coord.pending_mode(TOPIC), "2")
+        self.assertEqual(fired_update_types(coord), ["sensors_only"])
+
+    def test_failed_read_after_the_timeout_stops_waiting(self):
+        coord = make_coordinator()
+        self.change_mode(coord, "2")
+        coord._pending_modes[TOPIC] = ("2", time.monotonic() - 1)
+        coord.client.get_project.side_effect = RuntimeError("timeout")
+        run(coord._async_update_data())
+        self.assertIsNone(coord.pending_mode(TOPIC))
+
+    def test_projects_endpoint_down_uses_the_devices_fallback(self):
+        # /topics/ down, /devices/ up: a pending change must not leave the integration without data
+        coord = make_coordinator()
+        self.change_mode(coord, "2")
+        coord.client.get_project.side_effect = RuntimeError("HTTP 404")
+        coord.client.get_sensors.side_effect = RuntimeError("HTTP 404")
+        coord.client.get_devices.return_value = [{"sensor": {
+            "id": 1, "name": "A", "status": "03", "topic_info": {"id": TOPIC, "mode": "1"}}}]
+        coord._fetch_hubs = lambda: []
+        for _ in range(3):
+            result = run(coord._async_update_data())
+            self.assertEqual(result["sensors"][0]["Room_id"], 1)
 
     def test_only_the_changed_project_is_kept_on_the_request(self):
         coord = make_coordinator()

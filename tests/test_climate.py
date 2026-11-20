@@ -23,7 +23,7 @@ ENTRY = SimpleNamespace(entry_id="e1", options={}, data={})
 
 def coordinator(**metodos):
     c = SimpleNamespace(data={"sensors": [{"Room_id": 1, "Room_Name": "Salón"}], "projects": [], "hubs": []},
-                        hass=MagicMock(), client=MagicMock())
+                        hass=MagicMock(), client=MagicMock(), pending_mode=lambda topic_id: None)
     for k, v in metodos.items():
         setattr(c, k, v)
     return c
