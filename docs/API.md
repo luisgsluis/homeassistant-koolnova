@@ -213,6 +213,11 @@ installation does not enable is accepted by the API, but the system then turns i
 | `"02"` | `off` |
 | `"03"` | `auto` |
 
+`"03"` means "on, in the system's mode": Koolnova's web app only sends `"02"` and `"03"`, and its
+zone mode picker changes the project `mode` (one mode for every zone). With `auto` among the zone
+HVAC modes (the default), a zone in `"03"` is shown in the project's mode (`heat`, `cool`...), and
+picking a mode on it sends the project `mode` (if it differs) and then `"03"`.
+
 ### Fan speed (`speed`)
 
 | Code | HA speed |

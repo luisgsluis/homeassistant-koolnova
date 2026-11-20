@@ -159,6 +159,84 @@ class ClimateServiceTest(unittest.TestCase):
         run(p.async_set_hvac_mode(HVACMode.DRY))
         p.coordinator.async_update_project_data.assert_not_called()
 
+    def zona_modos(self, status="03", mode="2", topic_modes="11110001", options=None, **metodos):
+        coord = coordinator(**metodos)
+        coord.data["sensors"] = [{"Room_id": 1, "Room_Name": "Salón", "Room_status": status}]
+        coord.data["projects"] = [{"Topic_id": 7, "Mode": mode, "Topic_modes": topic_modes,
+                                   "is_online": True, "eco": False, "is_stop": False}]
+        entry = SimpleNamespace(entry_id="e1", options=options or {}, data={})
+        e = climate_mod.KoolnovaZoneEntity(coord, entry, coord.data["sensors"][0])
+        e.hass = MagicMock()
+        e.async_write_ha_state = MagicMock()
+        return e
+
+    def test_zone_modes_are_off_plus_the_system_modes(self):
+        self.assertEqual(self.zona_modos().hvac_modes,
+                         [HVACMode.OFF, HVACMode.HEAT, HVACMode.COOL, HVACMode.DRY, HVACMode.FAN_ONLY])
+        self.assertEqual(self.zona_modos(topic_modes="0110000").hvac_modes,
+                         [HVACMode.OFF, HVACMode.HEAT, HVACMode.COOL])
+
+    def test_zone_on_shows_the_system_mode(self):
+        for status, mode, expected in (("03", "2", HVACMode.HEAT), ("03", "1", HVACMode.COOL),
+                                       ("03", "6", HVACMode.HEAT), ("03", "3", HVACMode.DRY),
+                                       ("02", "2", HVACMode.OFF), ("03", "9", HVACMode.AUTO)):
+            with self.subTest(status=status, mode=mode):
+                self.assertEqual(self.zona_modos(status, mode).hvac_mode, expected)
+
+    def test_zone_same_mode_only_turns_it_on(self):
+        z = self.zona_modos("02", "2", async_update_sensor_data=AsyncMock(), async_update_project_data=AsyncMock())
+        run(z.async_set_hvac_mode(HVACMode.HEAT))
+        z.coordinator.async_update_project_data.assert_not_called()
+        z.coordinator.async_update_sensor_data.assert_awaited_once_with(1, {"status": "03"})
+
+    def test_zone_other_mode_switches_the_system_and_turns_it_on(self):
+        z = self.zona_modos("02", "2", async_update_sensor_data=AsyncMock(), async_update_project_data=AsyncMock())
+        run(z.async_set_hvac_mode(HVACMode.COOL))
+        z.coordinator.async_update_project_data.assert_awaited_once_with(7, {"mode": "1"})
+        z.coordinator.async_update_sensor_data.assert_awaited_once_with(1, {"status": "03"})
+
+    def test_zone_already_on_other_mode_only_switches_the_system(self):
+        z = self.zona_modos("03", "2", async_update_sensor_data=AsyncMock(), async_update_project_data=AsyncMock())
+        run(z.async_set_hvac_mode(HVACMode.COOL))
+        z.coordinator.async_update_project_data.assert_awaited_once_with(7, {"mode": "1"})
+        z.coordinator.async_update_sensor_data.assert_not_called()
+
+    def test_zone_mode_not_enabled_is_not_sent(self):
+        z = self.zona_modos("02", "2", topic_modes="0110000",
+                            async_update_sensor_data=AsyncMock(), async_update_project_data=AsyncMock())
+        run(z.async_set_hvac_mode(HVACMode.DRY))
+        z.coordinator.async_update_project_data.assert_not_called()
+        z.coordinator.async_update_sensor_data.assert_not_called()
+
+    def test_zone_system_mode_failure_raises_and_leaves_the_zone(self):
+        z = self.zona_modos("02", "2", async_update_sensor_data=AsyncMock(),
+                            async_update_project_data=AsyncMock(side_effect=RuntimeError("x")))
+        with self.assertRaises(HomeAssistantError):
+            run(z.async_set_hvac_mode(HVACMode.COOL))
+        z.coordinator.async_update_sensor_data.assert_not_called()
+
+    def test_zone_turn_on_and_off_keep_the_system_mode(self):
+        z = self.zona_modos("02", "1", async_update_sensor_data=AsyncMock(), async_update_project_data=AsyncMock())
+        run(z.async_turn_on())
+        run(z.async_set_hvac_mode(HVACMode.OFF))
+        run(z.async_turn_off())
+        z.coordinator.async_update_project_data.assert_not_called()
+        self.assertEqual([c.args for c in z.coordinator.async_update_sensor_data.await_args_list],
+                         [(1, {"status": "03"}), (1, {"status": "02"}), (1, {"status": "02"})])
+
+    def test_zone_without_auto_keeps_the_configured_modes(self):
+        z = self.zona_modos("01", "2", options={"zone_hvac_modes": ["off", "heat", "cool"]},
+                            async_update_sensor_data=AsyncMock(), async_update_project_data=AsyncMock())
+        self.assertEqual(z.hvac_modes, [HVACMode.OFF, HVACMode.HEAT, HVACMode.COOL])
+        self.assertEqual(z.hvac_mode, HVACMode.HEAT)
+        self.assertEqual(self.zona_modos("03", "2", options={"zone_hvac_modes": ["off", "heat"]}).hvac_mode,
+                         HVACMode.OFF)
+        run(z.async_set_hvac_mode(HVACMode.COOL))
+        run(z.async_turn_on())
+        z.coordinator.async_update_project_data.assert_not_called()
+        self.assertEqual([c.args for c in z.coordinator.async_update_sensor_data.await_args_list],
+                         [(1, {"status": "00"}), (1, {"status": "01"})])
+
     def test_hub_failure_raises(self):
         coord = coordinator()
         coord.hass.async_add_executor_job = AsyncMock(side_effect=RuntimeError("x"))
