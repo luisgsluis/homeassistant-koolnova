@@ -28,7 +28,8 @@ Never use an absolute `koolnova_api` import, and never add the PyPI package to `
 
 `climate.py` exposes three classes that translate through the mappings in `const.py`
 (`KOOLNOVA_TO_HVAC_MODE`, `KOOLNOVA_ZONE_STATUS_TO_HVAC`, `KOOLNOVA_TO_FAN` and their
-auto-generated inverses):
+inverses; the project one, `HVAC_TO_KOOLNOVA_MODE_CANDIDATES`, is written by hand because several
+codes share an HA mode, and `mode_code_for` picks the code from the project's `TopicModes`):
 
 - `KoolnovaProjectEntity` — the whole project: global HVAC mode, ECO, stop.
 - `KoolnovaZoneEntity` — one per sensor/room: setpoint, status, fan speed.

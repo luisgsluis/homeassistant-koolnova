@@ -20,6 +20,10 @@ PROJECTS_PAYLOAD = {
                 "is_online": True,
                 "eco": False,
                 "last_sync": "2026-07-01T10:00:00Z",
+                "configurations": [
+                    {"key": "SomethingElse", "value": "x"},
+                    {"key": "TopicModes", "value": "11110001"},
+                ],
             },
         }
     ]
@@ -89,8 +93,21 @@ class GetProjectTest(ClientTestCase):
                 "is_online": True,
                 "eco": False,
                 "last_sync": "2026-07-01T10:00:00Z",
+                "Topic_modes": "11110001",
             },
         )
+
+    def test_topic_modes_is_none_without_configurations(self):
+        for configurations in (None, [], [{"key": "SomethingElse", "value": "x"}]):
+            with self.subTest(configurations=configurations):
+                payload = {"data": [{"name": "Home", "topic": dict(PROJECTS_PAYLOAD["data"][0]["topic"])}]}
+                if configurations is None:
+                    del payload["data"][0]["topic"]["configurations"]
+                else:
+                    payload["data"][0]["topic"]["configurations"] = configurations
+                self._respond(payload)
+
+                self.assertIsNone(self.client.get_project()[0]["Topic_modes"])
 
     def test_raises_when_the_api_returns_nothing(self):
         self._respond({})

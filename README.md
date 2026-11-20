@@ -15,7 +15,8 @@ Requires Home Assistant 2026.11.0 or newer (since 2.1.1 the climate entities use
 
 ## Features
 
-- ❄️ **HVAC modes per zone and globally** (COOL / HEAT / AUTO / OFF)
+- ❄️ **HVAC modes**: per zone on/off, and the system mode globally (HEAT / COOL / DRY / FAN ONLY,
+  whichever your installation enables)
 - 🌡️ **Target temperature** per zone and global median across zones
 - 🌬️ **Fan speed** per zone (LOW / MEDIUM / HIGH / AUTO)
 - 🏠 **Global project control** (mode, ECO, stop) on a single `climate` entity
@@ -77,7 +78,8 @@ and restart Home Assistant.
 credentials.
 
 Options available afterwards through *Configure* (defaults and allowed ranges: `const.py`):
-update interval, project refresh frequency, offered project and zone HVAC modes, temperature range
+update interval, project refresh frequency, offered project and zone HVAC modes (the project modes
+come from your installation; the option can only hide some of them), temperature range
 and precision, and API request timeout.
 
 ## Documentation

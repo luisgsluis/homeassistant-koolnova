@@ -5,6 +5,31 @@ Every published version of the integration. The format follows
 [SemVer](https://semver.org/): the git tag and the `"version"` field in `manifest.json` are always
 identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
+## [Unreleased]
+
+### Changed (breaking)
+
+- **Project mode codes follow Koolnova's own table.** The integration read the project `mode` as
+  `"1"` cool, `"2"` off, `"4"` heat, `"6"` auto. Koolnova's web app defines `"0"` ventilation,
+  `"1"` cooling, `"2"` heating, `"3"` dehumidification, `"4"` radiant floor, `"5"` floor cooling +
+  cold air and `"6"` radiant floor + hot air. So a system heating by air (`"2"`) showed as off, and
+  Heat on the global control sent radiant floor (`"4"`), which an air-only system answers by turning
+  its zones off. Now `"2"`, `"4"` and `"6"` read as `heat`, `"1"` and `"5"` as `cool`, `"3"` as
+  `dry` and `"0"` as `fan_only`; Heat sends `"2"` (or the first floor code the system enables). The
+  project entity no longer offers `off`/`auto` as a project mode (they sent heating and
+  floor + hot air); on/off stays per zone. See [docs/API.md](docs/API.md#project-mode-mode).
+- **The project's modes come from the system.** The `TopicModes` configuration, already in the
+  `GET /projects/` answer (no extra request), says which modes the installation enables; the
+  project entity offers those. The **Project HVAC Modes** option now only hides modes: it offers
+  heat, cool, dry and fan only, and cannot add a mode the system doesn't enable. Existing
+  installs keep their saved selection (cool and heat unless changed), so dry and fan only appear
+  only after selecting them in the options; off/auto saved by older versions are ignored.
+
+### Added
+
+- `project_mode_code` (raw Koolnova code) and `system_modes` (modes the installation enables)
+  attributes on the project entity. `compressor_mode` can now also be `dry` or `fan_only`.
+
 ## [3.0.1] — 2026-11-18
 
 ### Fixed

@@ -104,6 +104,61 @@ class ClimateServiceTest(unittest.TestCase):
         with self.assertRaises(HomeAssistantError):
             run(p.async_set_hvac_mode(p.hvac_modes[0]))
 
+    def proyecto_modos(self, topic_modes, mode="2", options=None, **metodos):
+        coord = coordinator(**metodos)
+        coord.data["projects"] = [{"Topic_id": 7, "Mode": mode, "Topic_modes": topic_modes,
+                                   "is_online": True, "eco": False, "is_stop": False}]
+        entry = SimpleNamespace(entry_id="e1", options=options or {}, data={})
+        e = climate_mod.KoolnovaProjectEntity(coord, entry, {"Topic_id": 7})
+        e.hass = MagicMock()
+        e.async_write_ha_state = MagicMock()
+        return e
+
+    def test_project_modes_come_from_topic_modes(self):
+        self.assertEqual(self.proyecto_modos("11110001").hvac_modes,
+                         [HVACMode.HEAT, HVACMode.COOL, HVACMode.DRY, HVACMode.FAN_ONLY])
+        self.assertEqual(self.proyecto_modos("0110000").hvac_modes, [HVACMode.HEAT, HVACMode.COOL])
+        self.assertEqual(self.proyecto_modos(None).hvac_modes, [HVACMode.HEAT, HVACMode.COOL])
+
+    def test_project_modes_option_narrows_down(self):
+        p = self.proyecto_modos("11110001", options={"project_hvac_modes": ["cool", "heat"]})
+        self.assertEqual(p.hvac_modes, [HVACMode.HEAT, HVACMode.COOL])
+
+    def test_project_modes_option_never_adds_a_disabled_mode(self):
+        p = self.proyecto_modos("0110000", options={"project_hvac_modes": ["cool", "dry"]})
+        self.assertEqual(p.hvac_modes, [HVACMode.COOL])
+
+    def test_project_modes_option_with_nothing_left_offers_every_enabled_mode(self):
+        p = self.proyecto_modos("0110000", options={"project_hvac_modes": ["off", "auto"]})
+        self.assertEqual(p.hvac_modes, [HVACMode.HEAT, HVACMode.COOL])
+
+    def test_project_mode_reads_heating_as_heat(self):
+        coord_on = {"Room_id": 1, "Room_Name": "Salón", "Room_status": "03"}
+        for code, expected in (("2", HVACMode.HEAT), ("1", HVACMode.COOL), ("4", HVACMode.HEAT),
+                               ("6", HVACMode.HEAT), ("5", HVACMode.COOL), ("3", HVACMode.DRY),
+                               ("0", HVACMode.FAN_ONLY)):
+            with self.subTest(code=code):
+                p = self.proyecto_modos("11111111", mode=code)
+                p.coordinator.data["sensors"] = [dict(coord_on)]
+                self.assertEqual(p.hvac_mode, expected)
+                self.assertEqual(p.extra_state_attributes["compressor_mode"], expected.value)
+                self.assertEqual(p.extra_state_attributes["project_mode_code"], code)
+
+    def test_set_project_mode_sends_the_first_enabled_code(self):
+        for topic_modes, mode, code in (("11110001", HVACMode.HEAT, "2"), ("11110001", HVACMode.COOL, "1"),
+                                        ("11110001", HVACMode.DRY, "3"), ("11110001", HVACMode.FAN_ONLY, "0"),
+                                        ("0000101", HVACMode.HEAT, "6"), ("0000100", HVACMode.HEAT, "4"),
+                                        ("0000010", HVACMode.COOL, "5")):
+            with self.subTest(topic_modes=topic_modes, mode=mode):
+                p = self.proyecto_modos(topic_modes, async_update_project_data=AsyncMock())
+                run(p.async_set_hvac_mode(mode))
+                p.coordinator.async_update_project_data.assert_awaited_once_with(7, {"mode": code})
+
+    def test_set_project_mode_not_enabled_is_not_sent(self):
+        p = self.proyecto_modos("0110000", async_update_project_data=AsyncMock())
+        run(p.async_set_hvac_mode(HVACMode.DRY))
+        p.coordinator.async_update_project_data.assert_not_called()
+
     def test_hub_failure_raises(self):
         coord = coordinator()
         coord.hass.async_add_executor_job = AsyncMock(side_effect=RuntimeError("x"))

@@ -120,7 +120,8 @@ Condition on the `compressor_mode` attribute, **not** `state`: the project entit
 in on/off (see [README](../README.md#entities) — it reports `off` whenever most zones are off,
 regardless of whether the last selected mode was cool or heat), so a plain `state: cool` condition
 also hides the card whenever the project happens to be off in cool mode. `compressor_mode` is the
-raw cool/heat selection, unaffected by on/off:
+project mode (`heat`, `cool`, `dry` or `fan_only`), unaffected by on/off; `project_mode_code` has
+the raw Koolnova code if you need to tell floor heating from air heating:
 
 ```yaml
 type: conditional

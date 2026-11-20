@@ -25,7 +25,8 @@ from homeassistant.exceptions import HomeAssistantError
 from .const import (
     DOMAIN,
     KOOLNOVA_TO_HVAC_MODE,
-    HVAC_TO_KOOLNOVA_MODE,
+    enabled_hvac_modes,
+    mode_code_for,
     KOOLNOVA_ZONE_STATUS_TO_HVAC,
     HVAC_TO_KOOLNOVA_ZONE_STATUS,
     KOOLNOVA_TO_FAN,
@@ -114,10 +115,20 @@ class KoolnovaProjectEntity(ClimateEntity):
         """Get configuration value from options or data."""
         return self.config_entry.options.get(key, self.config_entry.data.get(key, default))
 
+    def _get_system_hvac_modes(self):
+        """HA modes the installation enables (its TopicModes configuration)."""
+        self._update_project_data()
+        return enabled_hvac_modes(self._project.get("Topic_modes"))
+
     def _get_project_hvac_modes(self):
-        """Get configured project HVAC modes."""
-        mode_values = self._get_config_value(CONF_PROJECT_HVAC_MODES, [mode.value for mode in DEFAULT_PROJECT_HVAC_MODES])
-        return [HVACMode(value) for value in mode_values]
+        """Modes offered: those the system enables, narrowed down by the "Project HVAC Modes" option.
+
+        Values the option no longer offers (off/auto from older versions) are ignored. If nothing
+        is left, every enabled mode is offered, so the entity never ends up with no mode at all.
+        """
+        system_modes = self._get_system_hvac_modes()
+        selected = set(self._get_config_value(CONF_PROJECT_HVAC_MODES, [mode.value for mode in DEFAULT_PROJECT_HVAC_MODES]))
+        return [mode for mode in system_modes if mode.value in selected] or system_modes
 
     def _get_zone_hvac_modes(self):
         """Get configured zone HVAC modes."""
@@ -214,8 +225,8 @@ class KoolnovaProjectEntity(ClimateEntity):
         unit shows "Stop" and zones can't be turned on until it is cleared),
         not the same as all zones off. Off is reported when
         most zones are off (or there are none); otherwise the project's
-        compressor mode (cool/heat) is reported, even if it falls outside the
-        configured (selectable) project_hvac_modes.
+        mode (see KOOLNOVA_TO_HVAC_MODE) is reported, even if it falls outside
+        the selectable modes.
         """
         self._update_project_data()
         if self.preset_mode in (None, HVACMode.OFF.value):
@@ -295,11 +306,15 @@ class KoolnovaProjectEntity(ClimateEntity):
         attrs = {
             "eco_mode": self._project["eco"],
             "is_stop": self._project.get("is_stop"),
-            # Raw compressor mode (cool/heat), independent of on/off: unlike `hvac_mode`/`state`
-            # (which report off whenever most zones are off), this keeps reporting the last
-            # cool/heat selection even while the project is off, for dashboards that need to
-            # distinguish "off in cool mode" from "off in heat mode".
+            # Project mode, independent of on/off: unlike `hvac_mode`/`state` (which report off
+            # whenever most zones are off), this keeps reporting the last selection even while
+            # the project is off, for dashboards that need to distinguish "off in cool mode"
+            # from "off in heat mode".
             "compressor_mode": KOOLNOVA_TO_HVAC_MODE.get(self._project["Mode"], HVACMode.OFF).value,
+            # Raw Koolnova code ("2" heating by air, "6" radiant floor + hot air...) and the modes
+            # the installation enables, from its TopicModes configuration.
+            "project_mode_code": self._project.get("Mode"),
+            "system_modes": [mode.value for mode in self._get_system_hvac_modes()],
             "total_zones": sensors_count,
             "control_type": "global_controller",
             "configured_project_modes": [mode.value for mode in self._get_project_hvac_modes()],
@@ -329,16 +344,17 @@ class KoolnovaProjectEntity(ClimateEntity):
             _LOGGER.error("Unsupported project HVAC mode: %s. Available: %s", hvac_mode, self.hvac_modes)
             return
 
-        koolnova_mode = HVAC_TO_KOOLNOVA_MODE.get(hvac_mode)
+        # First code the installation enables for this mode (e.g. heat: "2" by air before the floor codes)
+        koolnova_mode = mode_code_for(hvac_mode, self._project.get("Topic_modes"))
         if not koolnova_mode:
-            _LOGGER.error("HVAC mode not mapped: %s", hvac_mode)
+            _LOGGER.error("HVAC mode not enabled on this system: %s", hvac_mode)
             return
 
         body = {"mode": koolnova_mode}
 
         try:
             await self.coordinator.async_update_project_data(self._project["Topic_id"], body)
-            _LOGGER.info("Project mode updated to %s", hvac_mode)
+            _LOGGER.info("Project mode updated to %s (code %s)", hvac_mode, koolnova_mode)
         except Exception as err:
             _fallo(self.hass, "Koolnova Project Mode", "Error updating project mode", err)
 
