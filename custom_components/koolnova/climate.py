@@ -258,6 +258,13 @@ class KoolnovaProjectEntity(ClimateEntity):
                 self._project = project
                 break
 
+    def _any_zone_on(self):
+        """True when at least one zone is not off."""
+        return any(
+            KOOLNOVA_ZONE_STATUS_TO_HVAC.get(sensor.get("Room_status", "02"), HVACMode.OFF) != HVACMode.OFF
+            for sensor in self.coordinator.data.get("sensors", [])
+        )
+
     @property
     def hvac_mode(self):
         """Return current project HVAC mode.
@@ -265,13 +272,13 @@ class KoolnovaProjectEntity(ClimateEntity):
         On/off comes from per-zone status, same as `preset_mode` below, not
         from the project's `is_stop`: that is a separate "Stop" state (the wall
         unit shows "Stop" and zones can't be turned on until it is cleared),
-        not the same as all zones off. Off is reported when
-        most zones are off (or there are none); otherwise the project's
-        mode (see KOOLNOVA_TO_HVAC_MODE) is reported, even if it falls outside
-        the selectable modes.
+        not the same as all zones off. Off is reported only when every zone
+        is off (or there are none); otherwise the project's mode (see
+        KOOLNOVA_TO_HVAC_MODE) is reported, even if it falls outside the
+        selectable modes.
         """
         self._update_project_data()
-        if self.preset_mode in (None, HVACMode.OFF.value):
+        if not self._any_zone_on():
             return HVACMode.OFF
         return KOOLNOVA_TO_HVAC_MODE.get(self._project["Mode"], HVACMode.OFF)
 
@@ -349,7 +356,7 @@ class KoolnovaProjectEntity(ClimateEntity):
             "eco_mode": self._project["eco"],
             "is_stop": self._project.get("is_stop"),
             # Project mode, independent of on/off: unlike `hvac_mode`/`state` (which report off
-            # whenever most zones are off), this keeps reporting the last selection even while
+            # only when every zone is off), this keeps reporting the last selection even while
             # the project is off, for dashboards that need to distinguish "off in cool mode"
             # from "off in heat mode".
             "compressor_mode": KOOLNOVA_TO_HVAC_MODE.get(self._project["Mode"], HVACMode.OFF).value,

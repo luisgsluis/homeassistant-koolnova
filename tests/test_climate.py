@@ -144,6 +144,19 @@ class ClimateServiceTest(unittest.TestCase):
                 self.assertEqual(p.extra_state_attributes["compressor_mode"], expected.value)
                 self.assertEqual(p.extra_state_attributes["project_mode_code"], code)
 
+    def test_project_is_off_only_when_every_zone_is_off(self):
+        for statuses, expected in ((["02", "02", "02"], HVACMode.OFF),
+                                   (["02", "02", "03"], HVACMode.HEAT),
+                                   (["03", "02", "02", "02", "02"], HVACMode.HEAT),
+                                   (["01"], HVACMode.HEAT),
+                                   ([], HVACMode.OFF)):
+            with self.subTest(statuses=statuses):
+                p = self.proyecto_modos("11111111", mode="2")
+                p.coordinator.data["sensors"] = [
+                    {"Room_id": i, "Room_Name": f"Zona {i}", "Room_status": s} for i, s in enumerate(statuses)
+                ]
+                self.assertEqual(p.hvac_mode, expected)
+
     def test_set_project_mode_sends_the_first_enabled_code(self):
         for topic_modes, mode, code in (("11110001", HVACMode.HEAT, "2"), ("11110001", HVACMode.COOL, "1"),
                                         ("11110001", HVACMode.DRY, "3"), ("11110001", HVACMode.FAN_ONLY, "0"),
