@@ -5,6 +5,15 @@ Every published version of the integration. The format follows
 [SemVer](https://semver.org/): the git tag and the `"version"` field in `manifest.json` are always
 identical (see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#publishing-a-release)).
 
+## [4.0.1] — 2026-11-23
+
+### Fixed
+
+- **The global control showed Off with zones still running.** `hvac_mode` of the project entity
+  reported `off` whenever most zones were off (2 of 5 heating showed Off). It is now `off` only
+  when every zone is off (or there are none); otherwise it is the project mode. Thanks to
+  [@50bbx](https://github.com/50bbx) (#16).
+
 ## [4.0.0] — 2026-11-20
 
 ### Changed (breaking)
