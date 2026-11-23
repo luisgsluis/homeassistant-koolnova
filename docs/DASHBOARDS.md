@@ -117,7 +117,7 @@ the title instead of below it, so the whole card stays one line tall.
 another entity's state — e.g. only show a fan control while the project is set to `cool`.
 
 Condition on the `compressor_mode` attribute, **not** `state`: the project entity's `state` folds
-in on/off (see [README](../README.md#entities) — it reports `off` whenever most zones are off,
+in on/off (see [README](../README.md#entities) — it reports `off` only when every zone is off,
 regardless of whether the last selected mode was cool or heat), so a plain `state: cool` condition
 also hides the card whenever the project happens to be off in cool mode. `compressor_mode` is the
 project mode (`heat`, `cool`, `dry` or `fan_only`), unaffected by on/off; `project_mode_code` has
