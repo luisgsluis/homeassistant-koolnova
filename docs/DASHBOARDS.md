@@ -52,7 +52,7 @@ views:
 
 ## Mushroom cards
 
-Needs [Mushroom](https://github.com/piitaya/lovelace-mushroom) from HACS. More compact: a
+Needs [Mushroom](https://github.com/piitaya/lovelace-mushroom) from the Marketplace. More compact: a
 `mushroom-climate-card` per zone in a 2-column grid, `fill_container: true` so every card matches
 the width of the global control card above it.
 

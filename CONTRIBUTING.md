@@ -1,14 +1,14 @@
 # Contributing to Koolnova for Home Assistant
 
-Thanks for wanting to help. This is a custom HACS integration that talks to
+Thanks for wanting to help. This is a custom integration, installed from Home Assistant's Marketplace, that talks to
 the Koolnova cloud API — which is undocumented, brittle, and bans your IP if
 you push it. Read `docs/API.md` before touching the client.
 
 ## Getting started
 
 The integration lives in `custom_components/koolnova/` and must keep the
-standard HACS shape: `custom_components/koolnova/`, `hacs.json` and
-`README.md` at the repo root, no zips, no `zip_release`.
+standard shape the Marketplace expects: `custom_components/koolnova/`, `hacs.json` (the file
+keeps that name) and `README.md` at the repo root, no zips, no `zip_release`.
 
 Run the client tests (stdlib `unittest`, no pytest, no HA install):
 

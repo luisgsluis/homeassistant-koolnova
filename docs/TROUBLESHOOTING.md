@@ -47,10 +47,10 @@ If it persists, delete the integration from the UI, restart HA and add it again.
 - The state HA shows comes from the last cached read, so it can lag behind a change made from
   the official app by up to one update interval.
 
-## HACS: "No content to download"
+## Marketplace: the installation or an update fails
 
-The release tag and the `"version"` field in `manifest.json` do not match. That is a packaging
-mistake, not something you did: please report it. See
+A release whose tag and `"version"` field in `manifest.json` do not match is a packaging mistake,
+not something you did: please report it, with the error the Marketplace shows. See
 [DEVELOPMENT.md](DEVELOPMENT.md#publishing-a-release).
 
 ## Collecting information for an issue

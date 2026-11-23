@@ -1,6 +1,5 @@
 # Koolnova for Home Assistant
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![release](https://img.shields.io/github/v/release/luisgsluis/homeassistant-koolnova)](https://github.com/luisgsluis/homeassistant-koolnova/releases)
 
 Custom integration that controls **Koolnova** HVAC systems from Home Assistant through their cloud
@@ -61,11 +60,15 @@ covers other patterns, like grouping fan control by floor instead of by zone.
 
 ## Installation
 
-### HACS (recommended)
+### Marketplace (recommended)
 
-1. HACS → ⋮ menu → **Custom repositories** → add
-   `https://github.com/luisgsluis/homeassistant-koolnova` with category *Integration*.
-2. Search for **Koolnova**, download it and restart Home Assistant.
+The Marketplace is Home Assistant's own, built in, not a separate integration. Adding a custom
+repository to it needs the GitHub connection of the Marketplace (it only reads public information).
+
+1. In the Marketplace, add the custom repository
+   `https://github.com/luisgsluis/homeassistant-koolnova` as an integration.
+2. Search for **Koolnova**, install it and restart Home Assistant. New versions then show up as an
+   update of the **Koolnova** entity.
 
 ### Manual
 

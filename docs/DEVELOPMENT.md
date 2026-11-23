@@ -140,12 +140,12 @@ the override must live under `"entity": {"climate": {"<translation_key>": {"stat
 
 ## Publishing a release
 
-HACS installs straight from the GitHub repository, so the root must keep the standard shape:
+The Marketplace installs straight from the GitHub repository, so the root must keep the standard shape:
 `custom_components/koolnova/`, `hacs.json` and `README.md` where they are, with no ZIPs and no
 `zip_release`.
 
-> **The tag and the `"version"` field in `manifest.json` must be identical.** If they differ, HACS
-> fails with `Downloading … failed with (No content to download)`. Tag `vX.Y.Z` ↔ version `X.Y.Z`
+> **The tag and the `"version"` field in `manifest.json` must be identical.** If they differ, the
+> Marketplace can't install that version. Tag `vX.Y.Z` ↔ version `X.Y.Z`
 > (the `v` prefix belongs to the tag only). Never publish a release whose tag or name does not
 > match the manifest version: it becomes "latest" and breaks installs for everyone.
 
@@ -158,7 +158,7 @@ HACS installs straight from the GitHub repository, so the root must keep the sta
 
 ### `hacs.json`
 
-Only a small set of keys is allowed (see the current `hacs.json`). Integration metadata (`domain`,
+The file keeps its name: the Marketplace reads it from the repository root. Only a small set of keys is allowed (see the current `hacs.json`). Integration metadata (`domain`,
 `config_flow`, `iot_class`, `integration_type`…) belongs in `manifest.json`; putting it here makes
 the `hacsjson` check fail with *extra keys not allowed*.
 
